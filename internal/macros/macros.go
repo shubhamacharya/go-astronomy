@@ -2057,5 +2057,397 @@ func CalculateSunsetAzimuth(localDay, localMonth, localYear, daylightSavings, ti
 	return CalculateAzimuthRise(ConvertDecimalDegToHours(eclipticRightAscension), 0, 0, ConvertDegreesToRadians(eclipticDeclination), 0, 0, atmosphericRefraction, geographicLatitude)
 }
 
+func CalculateLocalSideralTimeSet(RAH, RAM, RAS, DD, DM, DS, VD, G float64) float64 {
+	// Local sidereal time of set, in hours
 
-// next py fun :sunset_lct
+	// Convert right ascension to decimal hours
+	rightAscensionDecimal := ConvertTimeToDecimal(RAH, RAM, RAS)
+	rightAscensionRadians := ConvertDegreesToRadians(ConvertHoursToDecimalDeg(rightAscensionDecimal))
+
+	// Convert declination to radians
+	declinationRadians := ConvertDegreesToRadians(ConvertDegMinSecToDecimalDeg(DD, DM, DS))
+
+	// Convert observer's latitude and visual diameter to radians
+	latitudeRadians := ConvertDegreesToRadians(VD)
+	geographicLongitudeRadians := ConvertDegreesToRadians(G)
+
+	// Calculate the coSine of the hour angle
+	CosHourAngle := -(math.Sin(latitudeRadians) + math.Sin(geographicLongitudeRadians) * math.Sin(declinationRadians)) / (math.Cos(geographicLongitudeRadians) * math.Cos(declinationRadians))
+
+	var hourAngle float64
+	if math.Abs(CosHourAngle) <= 1 {
+		hourAngle = math.ACos(CosHourAngle)
+	}
+
+	// Calculate local sidereal time of rise
+	localSiderealTime := ConvertDecimalDegToHours(ConvertRadiansToDegrees(rightAscensionRadians + hourAngle))
+
+	// Ensure the time is within the 0-24 hour range
+	return localSiderealTime - 24 * math.Floor(localSiderealTime / 24)
+}
+
+func CalculateSunsetForLCTHelper(day, month, year, solarRise, observerLatitude, geographicLongitude float64) (float64, float64, float64, float64, string) {
+	// Calculate the nutation in longitude for the given date
+	nutationLongitude := CalculateNutationLongitude(day, month, year)
+
+	// Calculate the apparent solar rise corrected for nutation and atmospheric refraction
+	apparentSolarRise := solarRise + nutationLongitude - 0.005694
+
+	// Calculate the ecliptic right ascension and declination for the corrected solar rise
+	eclipticRightAscension := CalculateEclipticRightAscension(apparentSolarRise, 0, 0, 0, 0, 0, day, month, year)
+	eclipticDeclination := CalculateEclipticDeclination(apparentSolarRise, 0, 0, 0, 0, 0, day, month, year)
+
+	// Calculate the local sidereal time of rise
+	localSiderealTimeRise := CalculateLocalSideralTimeSet(ConvertDecimalDegToHours(eclipticRightAscension), 0, 0, eclipticDeclination, 0, 0, observerLatitude, geographicLongitude)
+
+	// Determine the rise/set status
+	riseSetStatus := GetRiseOrSetStatus(ConvertDecimalDegToHours(eclipticRightAscension), 0, 0, eclipticDeclination, 0, 0, observerLatitude, geographicLongitude)
+
+	// Return the results
+	return apparentSolarRise, eclipticRightAscension, eclipticDeclination, localSiderealTimeRise, riseSetStatus
+}
+
+func CalculateSunsetForLCT(localDay, localMonth, localYear, daylightSavings, timeZoneCorrection, geographicLongitude, geographicLatitude float64) float64 {
+	// Calculate local civil time of sunset.
+	// Constants
+	const atmosphericRefraction float64 = 0.8333333
+
+	// Calculate the local civil date for Universal Time (UT)
+	civilDay := GetLocalCivilDayForUT(12, 0, 0, daylightSavings, timeZoneCorrection, localDay, localMonth, localYear)
+	civilMonth := GetLocalCivilMonthForUT(12, 0, 0, daylightSavings, timeZoneCorrection, localDay, localMonth, localYear)
+	civilYear := GetLocalCivilYearForUT(12, 0, 0, daylightSavings, timeZoneCorrection, localDay, localMonth, localYear)
+
+	// Calculate the sun's ecliptic longitude at 12:00 UT
+	sunEclipticLongitude := CalculateSunEclipticLong(12, 0, 0, daylightSavings, timeZoneCorrection, localDay, localMonth, localYear)
+
+	// Calculate the sunrise helper values
+	apparentSolarRise, eclipticRightAscension, eclipticDeclination, localSiderealTimeRise, riseSetStatus := CalculateSunsetForLCTHelper(civilDay, civilMonth, civilYear, sunEclipticLongitude, atmosphericRefraction, geographicLatitude)
+
+	// Check if the sun never rises or is circumpolar
+	if riseSetStatus != "OK" {
+		return -99
+	}
+
+	// Convert Local Sidereal Time (LST) to Greenwich Sidereal Time (GST)
+	gst := ConvertLSTToGST(localSiderealTimeRise, 0, 0, geographicLongitude)
+
+	// Convert GST to Universal Time (UT)
+	ut := ConvertGSTToUT(gst, 0, 0, civilDay, civilMonth, civilYear)
+
+	// Check if the GST to UT conversion is successful
+	if GetStatusOfGSTToUTConversion(gst, 0, 0, civilDay, civilMonth, civilYear) != "OK" {
+		return -99
+	}
+
+	// Recalculate the sun's ecliptic longitude for the UT time
+	sunEclipticLongitude = CalculateSunEclipticLong(ut, 0, 0, 0, 0, civilDay, civilMonth, civilYear)
+
+	// Recalculate the sunrise helper values
+	apparentSolarRise, eclipticRightAscension, eclipticDeclination, localSiderealTimeRise, riseSetStatus = CalculateSunriseForLCTHelper(civilDay, civilMonth, civilYear, sunEclipticLongitude, atmosphericRefraction, geographicLatitude)
+
+	// Final check for rise/set status
+	if riseSetStatus != "OK" {
+		return -99
+	}
+
+	// Convert LST to GST and then to UT
+	gst = ConvertLSTToGST(localSiderealTimeRise, 0, 0, geographicLongitude)
+	ut = ConvertGSTToUT(gst, 0, 0, civilDay, civilMonth, civilYear)
+
+	// Convert UT to local time
+	localTime := ConvertUTCToLocalTime(ut, 0, 0, daylightSavings, timeZoneCorrection, civilDay, civilMonth, civilYear)
+
+	return localTime
+}
+
+func GetSunRiseOrSetStatusHelper(localDay, localMonth, localYear, daylightSavings, timeZoneCorrection, geographicLongitude, geographicLatitude float64) (float64, float64, float64, float64, string) {
+	// Constants
+	const atmosphericRefraction float64 = 0.8333333
+
+	// Calculate the local civil date for Universal Time (UT)
+	civilDay := GetLocalCivilDayForUT(12, 0, 0, daylightSavings, timeZoneCorrection, localDay, localMonth, localYear)
+	civilMonth := GetLocalCivilMonthForUT(12, 0, 0, daylightSavings, timeZoneCorrection, localDay, localMonth, localYear)
+	civilYear := GetLocalCivilYearForUT(12, 0, 0, daylightSavings, timeZoneCorrection, localDay, localMonth, localYear)
+
+	// Calculate the sun's ecliptic longitude at 12:00 UT
+	sunEclipticLongitude := CalculateSunEclipticLong(12, 0, 0, daylightSavings, timeZoneCorrection, localDay, localMonth, localYear)
+
+	// Calculate the apparent solar rise corrected for nutation and atmospheric refraction
+	apparentSolarRise := sunEclipticLongitude + CalculateNutationLongitude(civilDay, civilMonth, civilYear) - 0.005694
+
+	// Calculate the ecliptic right ascension and declination for the corrected solar rise
+	eclipticRightAscension := CalculateEclipticRightAscension(apparentSolarRise, 0, 0, 0, 0, 0, civilDay, civilMonth, civilYear)
+	eclipticDeclination := CalculateEclipticDeclination(apparentSolarRise, 0, 0, 0, 0, 0, civilDay, civilMonth, civilYear)
+
+	// Calculate the local sidereal time of rise
+	localSiderealTimeRise := CalculateLocalSideralTimeRise(ConvertDecimalDegToHours(eclipticRightAscension), 0, 0, eclipticDeclination, 0, 0, atmosphericRefraction, geographicLatitude)
+
+	// Determine the rise/set status
+	riseSetStatus := GetRiseOrSetStatus(ConvertDecimalDegToHours(eclipticRightAscension), 0, 0, eclipticDeclination, 0, 0, atmosphericRefraction, geographicLatitude)
+
+	// Return the results
+	return apparentSolarRise, eclipticRightAscension, eclipticDeclination, localSiderealTimeRise, riseSetStatus
+}
+
+func GetSunRiseOrSetStatus(localDay, localMonth, localYear, daylightSavings, timeZoneCorrection, geographicLongitude, geographicLatitude float64) string {
+	const atmosphericRefraction float64 = 0.8333333
+
+	// Initialize status
+	status := ""
+
+	// Calculate the local civil date for Universal Time (UT)
+	civilDay := GetLocalCivilDayForUT(12, 0, 0, daylightSavings, timeZoneCorrection, localDay, localMonth, localYear)
+	civilMonth := GetLocalCivilMonthForUT(12, 0, 0, daylightSavings, timeZoneCorrection, localDay, localMonth, localYear)
+	civilYear := GetLocalCivilYearForUT(12, 0, 0, daylightSavings, timeZoneCorrection, localDay, localMonth, localYear)
+
+	// Calculate the sun's ecliptic longitude at 12:00 UT
+	sunEclipticLongitude := CalculateSunEclipticLong(12, 0, 0, daylightSavings, timeZoneCorrection, localDay, localMonth, localYear)
+
+	// Calculate sunrise/sunset helper values
+	apparentSolarRise, eclipticRightAscension, eclipticDeclination, localSiderealTimeRise, riseSetStatus := GetSunRiseOrSetStatusHelper(civilDay, civilMonth, civilYear, sunEclipticLongitude, atmosphericRefraction, geographicLatitude)
+
+	if riseSetStatus != "OK" {
+		return riseSetStatus
+	}
+
+	// Convert Local Sidereal Time (LST) to Greenwich Sidereal Time (GST)
+	gst := ConvertLSTToGST(localSiderealTimeRise, 0, 0, geographicLongitude)
+
+	// Convert GST to Universal Time (UT)
+	ut := ConvertGSTToUT(gst, 0, 0, civilDay, civilMonth, civilYear)
+
+	// Recalculate the sun's ecliptic longitude for the UT time
+	sunEclipticLongitude = CalculateSunEclipticLong(ut, 0, 0, 0, 0, civilDay, civilMonth, civilYear)
+
+	// Recalculate sunrise/sunset helper values
+	apparentSolarRise, eclipticRightAscension, eclipticDeclination, localSiderealTimeRise, riseSetStatus = GetSunRiseOrSetStatusHelper(civilDay, civilMonth, civilYear, sunEclipticLongitude, atmosphericRefraction, geographicLatitude)
+
+	if riseSetStatus != "OK" {
+		return riseSetStatus
+	}
+
+	// Convert Local Sidereal Time (LST) to Greenwich Sidereal Time (GST)
+	gst = ConvertLSTToGST(localSiderealTimeRise, 0, 0, geographicLongitude)
+
+	// Convert GST to Universal Time (UT)
+	ut = ConvertGSTToUT(gst, 0, 0, civilDay, civilMonth, civilYear)
+
+	if GetStatusOfGSTToUTConversion(gst, 0, 0, civilDay, civilMonth, civilYear) != "OK" {
+		status += " GST to UT conversion warning"
+		return status
+	}
+
+	return status
+}
+
+func GetSunRiseOrSetStatusHelper(day, month, year, solarRise, observerLatitude, geographicLongitude float64) (float64, float64, float64, float64, string) {
+	// Calculate the nutation in longitude for the given date
+	nutationLongitude := CalculateNutationLongitude(day, month, year)
+
+	// Calculate the apparent solar rise corrected for nutation and atmospheric refraction
+	apparentSolarRise := solarRise + nutationLongitude - 0.005694
+
+	// Calculate the ecliptic right ascension and declination for the corrected solar rise
+	eclipticRightAscension := CalculateEclipticRightAscension(apparentSolarRise, 0, 0, 0, 0, 0, day, month, year)
+	eclipticDeclination := CalculateEclipticDeclination(apparentSolarRise, 0, 0, 0, 0, 0, day, month, year)
+
+	// Calculate the local sidereal time of rise
+	localSiderealTimeRise := CalculateLocalSideralTimeRise(ConvertDecimalDegToHours(eclipticRightAscension), 0, 0, eclipticDeclination, 0, 0, observerLatitude, geographicLongitude)
+
+	// Determine the rise/set status
+	riseSetStatus := GetRiseOrSetStatus(ConvertDecimalDegToHours(eclipticRightAscension), 0, 0, eclipticDeclination, 0, 0, observerLatitude, geographicLongitude)
+
+	// Return the results
+	return apparentSolarRise, eclipticRightAscension, eclipticDeclination, localSiderealTimeRise, riseSetStatus
+}
+
+func CalculateAngleBetweenCelestialBodies(raH1, raM1, raS1, decD1, decM1, decS1, raH2, raM2, raS2, decD2, decM2, decS2 float64, unitType string) float64 {
+	// Convert first celestial object's coordinates to decimal degrees
+	ra1 := ConvertDegMinSecToDecimalDeg(raH1, raM1, raS1)
+	if unitType == "H" || unitType == "h" {
+		ra1 = ConvertTimeToDecimal(raH1, raM1, raS1)
+	}
+	ra1Radians := ConvertDegreesToRadians(ra1)
+	dec1 := ConvertDegMinSecToDecimalDeg(decD1, decM1, decS1)
+	dec1Radians := ConvertDegreesToRadians(dec1)
+
+	// Convert second celestial object's coordinates to decimal degrees
+	ra2 := ConvertDegMinSecToDecimalDeg(raH2, raM2, raS2)
+	if unitType == "H" || unitType == "h" {
+		ra2 = ConvertTimeToDecimal(raH2, raM2, raS2)
+	}
+	ra2Radians := ConvertDegreesToRadians(ra2)
+	dec2 := ConvertDegMinSecToDecimalDeg(decD2, decM2, decS2)
+	dec2Radians := ConvertDegreesToRadians(dec2)
+
+	// Calculate the angle between the two celestial objects
+	angleRadians := math.Acos(math.Sin(dec1Radians)*math.Sin(dec2Radians) + math.Cos(dec1Radians)*math.Cos(dec2Radians)*math.Cos(ra1Radians-ra2Radians))
+	angleDegrees := ConvertRadiansToDegrees(angleRadians)
+
+	return angleDegrees
+}
+
+func CalculateMorningTwilightStartInLCTHelper(localDay, localMonth, localYear, daylightSavings, timeZoneCorrection, geographicLongitude, geographicLatitude, twilightType float64) (float64, float64, float64, float64, string) {
+    // Calculate the local civil date for Universal Time (UT)
+    civilDay := GetLocalCivilDayForUT(12, 0, 0, daylightSavings, timeZoneCorrection, localDay, localMonth, localYear)
+    civilMonth := GetLocalCivilMonthForUT(12, 0, 0, daylightSavings, timeZoneCorrection, localDay, localMonth, localYear)
+    civilYear := GetLocalCivilYearForUT(12, 0, 0, daylightSavings, timeZoneCorrection, localDay, localMonth, localYear)
+
+    // Calculate the nutation longitude and adjust the solar right ascension
+    nutationLongitude := CalculateNutationLongitude(civilDay, civilMonth, civilYear)
+    solarRightAscension := CalculateSunEclipticLong(12, 0, 0, daylightSavings, timeZoneCorrection, localDay, localMonth, localYear) + nutationLongitude - 0.005694
+
+    // Calculate the ecliptic right ascension and declination
+    eclipticRightAscension := CalculateEclipticRightAscension(solarRightAscension, 0, 0, 0, 0, 0, civilDay, civilMonth, civilYear)
+    eclipticDeclination := CalculateEclipticDeclination(solarRightAscension, 0, 0, 0, 0, 0, civilDay, civilMonth, civilYear)
+
+    // Calculate the local sidereal time of rise
+    localSiderealTimeRise := CalculateLocalSiderealTimeRise(ConvertDecimalDegToHours(eclipticRightAscension), 0, 0, eclipticDeclination, 0, 0, twilightType, geographicLatitude)
+
+    // Determine the status of rise or set
+    riseOrSetStatus := GetRiseOrSetStatus(ConvertDecimalDegToHours(eclipticRightAscension), 0, 0, eclipticDeclination, 0, 0, twilightType, geographicLatitude)
+
+    return solarRightAscension, eclipticRightAscension, eclipticDeclination, localSiderealTimeRise, riseOrSetStatus
+}
+
+func CalculateMorningTwilightStartInLCT(localDay, localMonth, localYear, daylightSavings, timeZoneCorrection, geographicLongitude, geographicLatitude, twilightType float64) float64 {
+    // Determine the depression angle based on twilight type
+    depressionAngle := 18.0
+    if twilightType == "C" || twilightType == "c" {
+        depressionAngle = 6.0
+    } else if twilightType == "N" || twilightType == "n" {
+        depressionAngle = 12.0
+    }
+
+    // Calculate the local civil date for Universal Time (UT)
+    civilDay := GetLocalCivilDayForUT(12, 0, 0, daylightSavings, timeZoneCorrection, localDay, localMonth, localYear)
+    civilMonth := GetLocalCivilMonthForUT(12, 0, 0, daylightSavings, timeZoneCorrection, localDay, localMonth, localYear)
+    civilYear := GetLocalCivilYearForUT(12, 0, 0, daylightSavings, timeZoneCorrection, localDay, localMonth, localYear)
+    
+    // Calculate the sun's ecliptic longitude at 12:00 UT
+    sunEclipticLongitude := CalculateSunEclipticLong(12, 0, 0, daylightSavings, timeZoneCorrection, localDay, localMonth, localYear)
+    
+    // Calculate the morning twilight helper values
+    eclipticLongitude, rightAscension, declination, localSiderealTime, status := CalculateMorningTwilightStartInLCTHelper(civilDay, civilMonth, civilYear, sunEclipticLongitude, depressionAngle, geographicLatitude)
+
+    // Check if the sun never rises or is circumpolar
+    if status != "OK" {
+        return -99
+    }
+
+    // Convert Local Sidereal Time (LST) to Greenwich Sidereal Time (GST)
+    gst := ConvertLSTToGST(localSiderealTime, 0, 0, geographicLongitude)
+
+    // Convert GST to Universal Time (UT)
+    ut := ConvertGSTToUT(gst, 0, 0, civilDay, civilMonth, civilYear)
+
+    // Check if the GST to UT conversion is successful
+    if GetStatusOfGSTToUTConversion(gst, 0, 0, civilDay, civilMonth, civilYear) != "OK" {
+        return -99
+    }
+
+    // Recalculate the sun's ecliptic longitude for the UT time
+    sunEclipticLongitude = CalculateSunEclipticLong(ut, 0, 0, 0, 0, civilDay, civilMonth, civilYear)
+    
+    // Recalculate the morning twilight helper values
+    eclipticLongitude, rightAscension, declination, localSiderealTime, status = CalculateMorningTwilightStartInLCTHelper(civilDay, civilMonth, civilYear, sunEclipticLongitude, depressionAngle, geographicLatitude)
+
+    // Final check for rise/set status
+    if status != "OK" {
+        return -99
+    }
+
+    // Convert Local Sidereal Time (LST) to Greenwich Sidereal Time (GST) again
+    gst = ConvertLSTToGST(localSiderealTime, 0, 0, geographicLongitude)
+    ut = ConvertGSTToUT(gst, 0, 0, civilDay, civilMonth, civilYear)
+
+    // Convert UT to local time
+    localTime := ConvertUTCToLocalTime(ut, 0, 0, daylightSavings, timeZoneCorrection, civilDay, civilMonth, civilYear)
+
+    return localTime
+}
+
+func CalculateEveningTwilightStartInLCTHelper(localDay, localMonth, localYear, daylightSavings, timeZoneCorrection, geographicLongitude, geographicLatitude, twilightType float64) (float64, float64, float64, float64, string) {
+    // Calculate the local civil date for Universal Time (UT)
+    civilDay := GetLocalCivilDayForUT(12, 0, 0, daylightSavings, timeZoneCorrection, localDay, localMonth, localYear)
+    civilMonth := GetLocalCivilMonthForUT(12, 0, 0, daylightSavings, timeZoneCorrection, localDay, localMonth, localYear)
+    civilYear := GetLocalCivilYearForUT(12, 0, 0, daylightSavings, timeZoneCorrection, localDay, localMonth, localYear)
+
+    // Calculate the nutation longitude and adjust the solar ecliptic longitude
+    nutationLongitude := CalculateNutationLongitude(civilDay, civilMonth, civilYear)
+    solarEclipticLongitude := CalculateSunEclipticLong(12, 0, 0, daylightSavings, timeZoneCorrection, localDay, localMonth, localYear) + nutationLongitude - 0.005694
+
+    // Calculate the ecliptic right ascension and declination
+    eclipticRightAscension := CalculateEclipticRightAscension(solarEclipticLongitude, civilDay, civilMonth, civilYear)
+    eclipticDeclination := CalculateEclipticDeclination(solarEclipticLongitude, civilDay, civilMonth, civilYear)
+
+    // Calculate the local sidereal time of set
+    localSiderealTimeSet := CalculateLocalSiderealTimeSet(ConvertDecimalDegToHours(eclipticRightAscension), eclipticDeclination, twilightType, geographicLatitude)
+
+    // Determine the status of rise or set
+    riseOrSetStatus := GetRiseOrSetStatus(ConvertDecimalDegToHours(eclipticRightAscension), eclipticDeclination, twilightType, geographicLatitude)
+
+    return solarEclipticLongitude, eclipticRightAscension, eclipticDeclination, localSiderealTimeSet, riseOrSetStatus
+}
+
+func CalculateEveningTwilightStartInLCT(localDay, localMonth, localYear, daylightSavings, timeZoneCorrection, geographicLongitude, geographicLatitude, twilightType float64) float64 {
+    // Determine the depression angle based on twilight type
+    var depressionAngle float64
+    switch twilightType {
+    case "C", "c":
+        depressionAngle = 6.0
+    case "N", "n":
+        depressionAngle = 12.0
+    default:
+        depressionAngle = 18.0
+    }
+
+    // Calculate the local civil date for Universal Time (UT)
+    civilDay := GetLocalCivilDayForUT(12, 0, 0, daylightSavings, timeZoneCorrection, localDay, localMonth, localYear)
+    civilMonth := GetLocalCivilMonthForUT(12, 0, 0, daylightSavings, timeZoneCorrection, localDay, localMonth, localYear)
+    civilYear := GetLocalCivilYearForUT(12, 0, 0, daylightSavings, timeZoneCorrection, localDay, localMonth, localYear)
+    
+    // Calculate the sun's ecliptic longitude at 12:00 UT
+    sunEclipticLongitude := CalculateSunEclipticLong(12, 0, 0, daylightSavings, timeZoneCorrection, localDay, localMonth, localYear)
+    
+    // Calculate the evening twilight helper values
+    eclipticLongitude, rightAscension, declination, localSiderealTime, status := CalculateEveningTwilightStartInLCTHelper(civilDay, civilMonth, civilYear, sunEclipticLongitude, depressionAngle, geographicLatitude)
+
+    // Check if the sun never rises or is circumpolar
+    if status != "OK" {
+        return -99
+    }
+
+    // Convert Local Sidereal Time (LST) to Greenwich Sidereal Time (GST)
+    gst := ConvertLSTToGST(localSiderealTime, geographicLongitude)
+
+    // Convert GST to Universal Time (UT)
+    ut := ConvertGSTToUT(gst, civilDay, civilMonth, civilYear)
+
+    // Check if the GST to UT conversion is successful
+    if GetStatusOfGSTToUTConversion(gst, civilDay, civilMonth, civilYear) != "OK" {
+        return -99
+    }
+
+    // Recalculate the sun's ecliptic longitude for the UT time
+    sunEclipticLongitude = CalculateSunEclipticLong(ut, civilDay, civilMonth, civilYear)
+    
+    // Recalculate the evening twilight helper values
+    eclipticLongitude, rightAscension, declination, localSiderealTime, status = CalculateEveningTwilightStartInLCTHelper(civilDay, civilMonth, civilYear, sunEclipticLongitude, depressionAngle, geographicLatitude)
+
+    // Final check for rise/set status
+    if status != "OK" {
+        return -99
+    }
+
+    // Convert Local Sidereal Time (LST) to Greenwich Sidereal Time (GST) again
+    gst = ConvertLSTToGST(localSiderealTime, geographicLongitude)
+    ut = ConvertGSTToUT(gst, civilDay, civilMonth, civilYear)
+
+    // Convert UT to local time
+    localTime := ConvertUTCToLocalTime(ut, daylightSavings, timeZoneCorrection, civilDay, civilMonth, civilYear)
+
+    return localTime
+}
+
+// next py fun :e_twilight_l3710
