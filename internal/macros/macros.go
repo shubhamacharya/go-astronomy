@@ -1982,7 +1982,7 @@ func CalculateSunsetAzimuthHelper(day, month, year, solarRise, observerLatitude,
 	return apparentSolarRise, eclipticRightAscension, eclipticDeclination, localSiderealTimeRise, riseSetStatus
 }
 
-func CalculateSunsetAzimuth(rightAscensionHours, rightAscensionMinutes, rightAscensionSeconds, declinationDegrees, declinationMinutes, declinationSeconds, observerLatitude, geographicLongitude float64) float64 {
+func CalculateAzimuthOfSetting(rightAscensionHours, rightAscensionMinutes, rightAscensionSeconds, declinationDegrees, declinationMinutes, declinationSeconds, observerLatitude, geographicLongitude float64) float64 {
 	// Convert right ascension to decimal hours and then to radians
 	rightAscensionDecimal := ConvertTimeToDecimal(rightAscensionHours, rightAscensionMinutes, rightAscensionSeconds)
 	rightAscensionRadians := ConvertDegreesToRadians(ConvertHoursToDecimalDeg(rightAscensionDecimal))
@@ -2450,4 +2450,269 @@ func CalculateEveningTwilightStartInLCT(localDay, localMonth, localYear, dayligh
     return localTime
 }
 
-// next py fun :e_twilight_l3710
+func GetTwilightCalculationStatusHelper(day, month, year, sunRadius, declination, geographicPosition float64) (float64, float64, float64, float64, string) {
+    // Helper function for twilight calculation status.
+
+    // Calculate the apparent longitude of the sun
+    apparentLongitude := sunRadius + CalculateNutationLongitude(day, month, year) - 0.005694
+
+    // Calculate the ecliptic right ascension
+    rightAscension := CalculateEclipticRightAscension(apparentLongitude, 0, 0, 0, 0, 0, day, month, year)
+
+    // Calculate the ecliptic declination
+    declination := CalculateEclipticDeclination(apparentLongitude, 0, 0, 0, 0, 0, day, month, year)
+
+    // Convert right ascension to hours
+    rightAscensionHours := ConvertDecimalDegToHours(rightAscension)
+
+    // Calculate local sidereal time for rise
+    localSiderealTimeRise := rise_set_local_sidereal_time_rise(rightAscensionHours, 0, 0, declination, 0, 0, declination, geographicPosition)
+
+    // Calculate local sidereal time
+    localSiderealTime := CalculateLocalSideralTimeRise(rightAscensionHours, 0, 0, declination, 0, 0, declination, geographicPosition)
+
+    var status string
+    if strings.HasPrefix(localSiderealTime, "** c") {
+        status = "** lasts all night"
+    } else if strings.HasPrefix(localSiderealTime, "** n") {
+        status = "** Sun too far below horizon"
+    } else {
+        status = localSiderealTime
+    }
+
+    return apparentLongitude, rightAscension, declination, localSiderealTimeRise, status
+}
+
+func GetTwilightCalculationStatus(localDay, localMonth, localYear, daylightSaving, timeZoneCorrection, geographicLongitude, geographicLatitude, twilightType float64) string {
+    // Twilight calculation status.
+    // Twilight type can be one of "C" (civil), "N" (nautical), or "A" (astronomical)
+    // Returns:
+    // One of: "OK", "** lasts all night", or "** Sun too far below horizon"
+
+    var status string
+    var twilightAngle float64
+
+    // Determine the twilight angle based on the type of twilight
+    switch twilightType {
+    case "C", "c":
+        twilightAngle = 6
+    case "N", "n":
+        twilightAngle = 12
+    default:
+        twilightAngle = 18
+    }
+
+    // Compute Greenwich date and time for local time
+    greenwichDay := ComputeGreenwichDayForLT(12, 0, 0, daylightSaving, timeZoneCorrection, localDay, localMonth, localYear)
+    greenwichMonth := ComputeGreenwichMonthForLT(12, 0, 0, daylightSaving, timeZoneCorrection, localDay, localMonth, localYear)
+    greenwichYear := ComputeGreenwichYearForLT(12, 0, 0, daylightSaving, timeZoneCorrection, localDay, localMonth, localYear)
+    sunEclipticLongitude := CalculateSunEclipticLong(12, 0, 0, daylightSaving, timeZoneCorrection, localDay, localMonth, localYear)
+
+    // Get twilight calculation status
+    apparentLongitude, rightAscension, declination, localSiderealTimeRise, status := GetTwilightCalculationStatusHelper(greenwichDay, greenwichMonth, greenwichYear, sunEclipticLongitude, twilightAngle, geographicLatitude)
+
+    // Check if the status is not OK
+    if status != "OK" {
+        return status
+    }
+
+    // Convert local sidereal time to Greenwich sidereal time
+    greenwichSiderealTime := ConvertLSTToGST(localSiderealTimeRise, 0, 0, geographicLongitude)
+    universalTime := ConvertGSTToUT(greenwichSiderealTime, 0, 0, greenwichDay, greenwichMonth, greenwichYear)
+    sunEclipticLongitude = CalculateSunEclipticLong(universalTime, 0, 0, 0, 0, greenwichDay, greenwichMonth, greenwichYear)
+
+    // Get twilight calculation status again with updated values
+    apparentLongitude, rightAscension, declination, localSiderealTimeRise, status = GetTwilightCalculationStatusHelper(greenwichDay, greenwichMonth, greenwichYear, sunEclipticLongitude, twilightAngle, geographicLatitude)
+
+    // Check if the status is not OK
+    if status != "OK" {
+        return status
+    }
+
+    // Convert local sidereal time to Greenwich sidereal time again
+    greenwichSiderealTime = ConvertLSTToGST(localSiderealTimeRise, 0, 0, geographicLongitude)
+    universalTime = ConvertGSTToUT(greenwichSiderealTime, 0, 0, greenwichDay, greenwichMonth, greenwichYear)
+
+    // Check the status of GST to UT conversion
+    if GetStatusOfGSTToUTConversion(greenwichSiderealTime, 0, 0, greenwichDay, greenwichMonth, greenwichYear) != "OK" {
+        status += " GST to UT conversion warning"
+        return status
+    }
+
+    return status
+}
+
+func CalculatePlanetaryProperties(LH, LM, LS, DS, ZC, DY, MN, YR, S float64) (float64, float64, float64, float64, float64, float64, float64) {
+	// Coefficients for planets
+	coefficients := [][][]float64{
+		{
+			{178.179078, 415.2057519, 0.0003011, 0},
+			{75.899697, 1.5554889, 0.0002947, 0},
+			{0.20561421, 0.00002046, -0.00000003, 0},
+			{7.002881, 0.0018608, -0.0000183, 0},
+			{47.145944, 1.1852083, 0.0001739, 0},
+			{0.3870986, 6.74, -0.42},
+		},
+		{
+			{342.767053, 162.5533664, 0.0003097, 0},
+			{130.163833, 1.4080361, -0.0009764, 0},
+			{0.00682069, -0.00004774, 0.000000091, 0},
+			{3.393631, 0.0010058, -0.000001, 0},
+			{75.779647, 0.89985, 0.00041, 0},
+			{0.7233316, 16.92, -4.4},
+		},
+		{
+			{293.737334, 53.17137642, 0.0003107, 0},
+			{334.218203, 1.8407584, 0.0001299, -0.00000119},
+			{0.0933129, 0.000092064, -0.000000077, 0},
+			{1.850333, -0.000675, 0.0000126, 0},
+			{48.786442, 0.7709917, -0.0000014, -0.00000533},
+			{1.5236883, 9.36, -1.52},
+		},
+		{
+			{238.049257, 8.434172183, 0.0003347, -0.00000165},
+			{12.720972, 1.6099617, 0.00105627, -0.00000343},
+			{0.04833475, 0.00016418, -0.0000004676, -0.0000000017},
+			{1.308736, -0.0056961, 0.0000039, 0},
+			{99.443414, 1.01053, 0.00035222, -0.00000851},
+			{5.202561, 196.74, -9.4},
+		},
+		{
+			{266.564377, 3.398638567, 0.0003245, -0.0000058},
+			{91.098214, 1.9584158, 0.00082636, 0.00000461},
+			{0.05589232, -0.0003455, -0.000000728, 0.00000000074},
+			{2.492519, -0.0039189, -0.00001549, 0.00000004},
+			{112.790414, 0.8731951, -0.00015218, -0.00000531},
+			{9.554747, 165.6, -8.88},
+		},
+		{
+			{244.19747, 1.194065406, 0.000316, -0.0000006},
+			{171.548692, 1.4844328, 0.0002372, -0.00000061},
+			{0.0463444, -0.00002658, 0.000000077, 0},
+			{0.772464, 0.0006253, 0.0000395, 0},
+			{73.477111, 0.4986678, 0.0013117, 0},
+			{19.21814, 65.8, -7.19},
+		},
+		{
+			{84.457994, 0.6107942056, 0.0003205, -0.0000006},
+			{46.727364, 1.4245744, 0.00039082, -0.000000605},
+			{0.00899704, 0.00000633, -0.000000002, 0},
+			{1.779242, -0.0095436, -0.0000091, 0},
+			{130.681389, 1.098935, 0.00024987, -0.000004718},
+			{30.10957, 62.2, -6.87},
+		},
+	}
+
+	// Time calculations
+	B := ConvertLocalTimeToUTC(LH, LM, LS, DS, ZC, DY, MN, YR)
+	GD := ComputeGreenwichDayForLT(LH, LM, LS, DS, ZC, DY, MN, YR)
+	GM := ComputeGreenwichMonthForLT(LH, LM, LS, DS, ZC, DY, MN, YR)
+	GY := ComputeGreenwichYearForLT(LH, LM, LS, DS, ZC, DY, MN, YR)
+	A := ConvertGregorianToJulian(GD, GM, GY)
+	T := ((A - 2415020) / 36525) + (B / 876600)
+
+	u_s := strings.ToLower(S)
+
+	planetIndex := map[string]int{
+		"mercury": 0,
+		"venus":   1,
+		"mars":    2,
+		"jupiter": 3,
+		"saturn":  4,
+		"uranus":  5,
+		"neptune": 6,
+	}
+
+	IP, ok := planetIndex[u_s]
+	if !ok {
+		return ConvertRadiansToDegrees(UnwindDegrees(0)), ConvertRadiansToDegrees(UnwindDegrees(0)), ConvertRadiansToDegrees(UnwindDegrees(0)), ConvertRadiansToDegrees(UnwindDegrees(0)), ConvertRadiansToDegrees(UnwindDegrees(0)), ConvertRadiansToDegrees(UnwindDegrees(0)), ConvertRadiansToDegrees(UnwindDegrees(0))
+	}
+
+	PL := make([][]float64, 8)
+	for i := range PL {
+		PL[i] = make([]float64, 10)
+	}
+
+	AP := make([]float64, 8)
+
+	for i := 0; i < 7; i++ {
+		if i != IP {
+			continue
+		}
+
+		A := coefficients[i]
+
+		AA := A[0][1] * T
+		B := 360 * (AA - math.Floor(AA))
+		C := A[0][0] + B + (A[0][3]*T+A[0][2])*T*T
+		PL[i][1] = C - 360*math.Floor(C/360)
+		PL[i][2] = (A[0][1] * 0.009856263) + (A[0][2]+A[0][3])/36525
+		PL[i][3] = ((A[1][3]*T+A[1][2])*T+A[1][1])*T + A[1][0]
+		PL[i][4] = ((A[2][3]*T+A[2][2])*T+A[2][1])*T + A[2][0]
+		PL[i][5] = ((A[3][3]*T+A[3][2])*T+A[3][1])*T + A[3][0]
+		PL[i][6] = ((A[4][3]*T+A[4][2])*T+A[4][1])*T + A[4][0]
+		PL[i][7] = A[5][0]
+		PL[i][8] = A[5][1]
+		PL[i][9] = A[5][2]
+		AP[i] = PL[i][2] / PL[i][7]
+	}
+
+	F := math.Cos(ConvertDegreesToRadians(PL[IP][4]-PL[IP][3]))
+	E := math.Acos((PL[IP][8]*F + 1) / 2)
+
+	F := math.Cos(ConvertDegreesToRadians(PL[IP][4] - PL[IP][3]))
+
+	R := PL[IP][7] * (1 - PL[IP][4]*PL[IP][4]) / (1 + PL[IP][4]*F)
+	Q := ((PL[IP][5] + PL[IP][6] + E) / (PL[IP][7] * 2 * math.Pi))
+	P := UnwindRadians((ConvertDegreesToRadians(PL[IP][5]) + ConvertDegreesToRadians(PL[IP][6]) + E) / 2)
+
+	L := math.Acos((math.Cos(ConvertDegreesToRadians(PL[IP][4])) - PL[IP][4]*PL[IP][4]) / (1 - PL[IP][4]*PL[IP][4]))
+
+	Q := PL[IP][7] * (1 - PL[IP][4]*PL[IP][4]) / (1 + PL[IP][4]*F)
+
+	V := L / Q
+	Z := (2 * math.Atan(V)) * math.Pi
+
+	// Final properties
+	Lon := PL[IP][5]
+	Lat := math.Asin(math.Sin(ConvertDegreesToRadians(PL[IP][5])) * math.Sin(ConvertDegreesToRadians(PL[IP][6])))
+	RadiusVector := R
+
+	// Converting back to degrees
+	LonDeg := ConvertRadiansToDegrees(Lon)
+	LatDeg := ConvertRadiansToDegrees(Lat)
+	Elong := ConvertRadiansToDegrees(E)
+	Phase := ConvertRadiansToDegrees(F)
+	HalfElong := ConvertRadiansToDegrees(Z)
+
+	return LonDeg, LatDeg, RadiusVector, Elong, Phase, HalfElong, Q
+}
+
+// SolveCubic solves the cubic equation S^3 + 3S - W = 0 for a given W.
+// It returns the value of S in radians.
+func SolveCubic(W float64) float64 {
+	// Initial guess for S
+	S := W / 3
+
+	for {
+		S2 := S * S
+		// The function value at the current S
+		f := S*S2 + 3*S - W
+		// The derivative of the function
+		df := 3*S2 + 3
+
+		// Newton-Raphson update
+		newS := S - f/df
+
+		// Check for convergence
+		if math.Abs(newS-S) < 0.000001 {
+			return newS
+		}
+
+		// Update S
+		S = newS
+	}
+}
+
+
+// next py fun :moon_long_lat_hp
