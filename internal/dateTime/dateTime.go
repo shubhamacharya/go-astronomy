@@ -1,6 +1,9 @@
 package datetime
 
-import "math"
+import (
+	"fmt"
+	"math"
+)
 
 var daysOfWeek = [...]string{"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"}
 
@@ -108,9 +111,177 @@ func GetNameOfTheDayOfMonth(day float64, month int, year int) string {
 }
 
 func ConvertHrsMinSecToDecimalHrs(Hrs int, min int, sec float64, is12HrClock bool, AMPM string) float64 {
-	A := float64(Hrs) + ((float64(min) + (sec / 60)) / 60)
-	if is12HrClock && AMPM == "PM" {
-		return A + 12.0
+	// Convert seconds to a fractional part of a minute
+	secPart := sec / 60.0
+
+	// Convert minutes and the seconds part to a fractional part of an hour
+	minPart := (float64(min) + secPart) / 60.0
+
+	// Calculate total hours
+	A := float64(Hrs) + minPart
+
+	// Adjust for 12-hour clock format
+	if is12HrClock {
+		// Handle the case for 12 AM and 12 PM specifically
+		if AMPM == "AM" && Hrs == 12 {
+			A = minPart // 12 AM is 0 hours
+		} else if AMPM == "PM" && Hrs != 12 {
+			A += 12.0 // Add 12 hours for PM times, except for 12 PM itself
+		}
 	}
+
 	return A
+}
+
+func ConvertDecimalHrsToHrsMinSec(decimalHrs float64) (float64, float64, float64) {
+	hrs, fractPart := math.Modf(decimalHrs)
+	min, minFract := math.Modf(fractPart * 60)
+	sec := (math.Round(minFract*60) * 10000) / 10000
+	return hrs, min, sec
+}
+
+func ConvertLocalTimeToUniversalTime(day int, month int, year int, hrs int, min int, sec float64, daylightsavingHrs int, daylightsavingMin int, zoneOffset float64) (float64, float64, float64, float64, float64, float64) {
+	// Adjust for daylight saving time
+	hrs -= daylightsavingHrs
+	min -= daylightsavingMin
+
+	// Normalize the time if minutes or hours are negative
+	if min < 0 {
+		hrs -= 1
+		min += 60
+	}
+	if hrs < 0 {
+		day -= 1
+		hrs += 24
+	}
+
+	// Convert to decimal hours
+	decimalHrs := ConvertHrsMinSecToDecimalHrs(hrs, min, sec, false, "")
+
+	// Adjust for the time zone offset
+	UT := decimalHrs - zoneOffset
+
+	// If UT is negative, it means we are in the previous day
+	if UT < 0 {
+		day -= 1
+		UT += 24
+	}
+	// If UT exceeds 24 hours, it means we are in the next day
+	if UT >= 24 {
+		day += 1
+		UT -= 24
+	}
+
+	// Adjust the Greenwich calendar day based on the UT
+	Gday := float64(day) + (UT / 24.0)
+
+	// Calculate Julian Date from Greenwich calendar day
+	julianDate := ConvertGreenwichDateToJulianDate(Gday, month, year)
+
+	// Convert Julian Date back to Greenwich calendar date
+	UTDay, UTMonth, UTYear := ConvertJulianDateToGreenwichDate(julianDate)
+
+	// Extract time from UT
+	decimalTime := (UTDay - math.Trunc(UTDay)) * 24
+	UTHrs, UTMin, UTSec := ConvertDecimalHrsToHrsMinSec(decimalTime)
+	UTDay = math.Trunc(UTDay) // Truncate UTDay to get the whole day number
+
+	return UTDay, UTMonth, UTYear, UTHrs, UTMin, UTSec
+}
+
+func ConvertUniversalTimeToLocalTime(day float64, month int, year int, hrs int, min int, sec float64, daylightsavingHrs int, daylightsavingMin int, zoneOffset float64) (float64, float64, float64, float64, float64, float64) {
+	decimalHrs := ConvertHrsMinSecToDecimalHrs(hrs, min, sec, false, "") + zoneOffset + float64(daylightsavingHrs) + float64(daylightsavingMin)
+	julianDate := ConvertGreenwichDateToJulianDate(day, month, year) + (decimalHrs / 24)
+	calDay, calMonth, calYear := ConvertJulianDateToGreenwichDate(julianDate)
+
+	Gday, GTime := math.Modf(calDay)
+
+	GHrs, GMin, GSec := ConvertDecimalHrsToHrsMinSec(GTime * 24)
+
+	return Gday, calMonth, calYear, GHrs, GMin, GSec
+}
+
+func ConvertUniversalTimeToGreenwichSiderealTime(day float64, month int, year int, hrs int, min int, sec float64) (float64, float64, float64) {
+	julianDate := ConvertGreenwichDateToJulianDate(day, month, year)
+	elapsedDays := julianDate - 2451545.0
+	centuriesSinceJ2000 := elapsedDays / 36525.0
+	gstAtZeroUT := 6.697374558 + (2400.051336 * centuriesSinceJ2000) + (0.000025862 * math.Pow(centuriesSinceJ2000, 2))
+
+	// Normalize GST to the range [0, 24) hours
+	for gstAtZeroUT < 0 {
+		gstAtZeroUT += 24
+	}
+	for gstAtZeroUT >= 24 {
+		gstAtZeroUT -= 24
+	}
+
+	utInDecimalHours := ConvertHrsMinSecToDecimalHrs(hrs, min, sec, false, "") * 1.002737909
+	gst := gstAtZeroUT + utInDecimalHours
+
+	// Normalize GST to the range [0, 24) hours again after adding UT
+	for gst < 0 {
+		gst += 24
+	}
+	for gst >= 24 {
+		gst -= 24
+	}
+
+	GSTHrs, GSTMin, GSTSec := ConvertDecimalHrsToHrsMinSec(gst)
+
+	return GSTHrs, GSTMin, GSTSec
+}
+
+func ConvertGreenwichSiderealTimeToUniversalTime(day float64, month int, year int, hrs int, min int, sec float64) (float64, float64, float64) {
+	julianDate := ConvertGreenwichDateToJulianDate(day, month, year)
+	centuriesSinceJ2000 := (julianDate - 2451545.0) / 36525.0
+	gstAtZeroUT := 6.697374558 + (2400.051336 * centuriesSinceJ2000) + (0.000025862 * math.Pow(centuriesSinceJ2000, 2))
+
+	// Normalize GST to the range [0, 24) hours
+	for gstAtZeroUT < 0 {
+		gstAtZeroUT += 24
+	}
+	for gstAtZeroUT >= 24 {
+		gstAtZeroUT -= 24
+	}
+
+	gstInDecimalHours := ConvertHrsMinSecToDecimalHrs(hrs, min, sec, false, "")
+	utInDecimalHours := gstInDecimalHours - gstAtZeroUT
+
+	// Normalize UT to the range [0, 24) hours
+	for utInDecimalHours < 0 {
+		utInDecimalHours += 24
+	}
+	for utInDecimalHours >= 24 {
+		utInDecimalHours -= 24
+	}
+
+	utInDecimalHours *= 0.9972695663
+
+	UTHrs, UTMin, UTSec := ConvertDecimalHrsToHrsMinSec(utInDecimalHours)
+
+	return UTHrs, UTMin, UTSec
+}
+
+func CalculateLocalSiderealTimeUsingGreenwichSideralTime(hrs int, min int, sec float64, geoLong float64) (float64, float64, float64) {
+	// TODO: Add Logngitude directions
+	decimalTime := ConvertHrsMinSecToDecimalHrs(hrs, min, sec, false, "")
+	if geoLong < 0 {
+		decimalTime += (geoLong / 15)
+
+		for decimalTime < 0 {
+			decimalTime += 24
+		}
+		for decimalTime >= 24 {
+			decimalTime -= 24
+		}
+
+		LSTHrs, LSTMin, LSTSec := ConvertDecimalHrsToHrsMinSec(decimalTime)
+		return LSTHrs, LSTMin, LSTSec
+
+	} else {
+		// Return error : Geo Longitude must be negative
+		fmt.Println("\nGeo Longitude must be negative")
+		panic("\nGeo Longitude must be negative\n")
+	}
+	// return 0.0, 0.0, 0.0
 }

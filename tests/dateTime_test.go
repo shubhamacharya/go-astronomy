@@ -41,3 +41,50 @@ func TestConvertHrsMinSecToDecimalHrs(t *testing.T) {
 		t.Fatalf("Error while converting Hrs Min Sec to Decimal. Required: %f    Got: %f", expectedOpt, decimalHrs)
 	}
 }
+
+func TestConvertDecimalHrsToHrsMinSec(t *testing.T) {
+	Hrs, min, sec := datetime.ConvertDecimalHrsToHrsMinSec(18.524167)
+	if Hrs != 18 || min != 31 || sec != 27 {
+		t.Fatalf("Error while converting Decimal to Hrs Min Sec\n. Required: %f %f %f  Got: %f %f %f", 18.0, 31.0, 27.0, Hrs, min, sec)
+	}
+}
+
+func TestConvertLocalTimeToUniversalTime(t *testing.T) {
+	UTDay, UTMon, UTYear, UTHrs, UTMin, UTSec := datetime.ConvertLocalTimeToUniversalTime(1, 7, 2013, 3, 37, 0.0, 1, 0, 4)
+	if UTDay != 30 && UTMon != 6 && UTYear != 2013 && UTHrs != 22 && UTMin != 36 && UTSec != 60 {
+		t.Fatalf("Error while converting Local Time to Universal Time\n. Required: %f %f %f %f %f %f    Got: %f %f %f %f %f %f",
+			30.0, 6.0, 2013.0, 22.0, 36.0, 60.0, UTDay, UTMon, UTYear, UTHrs, UTMin, UTSec)
+	}
+}
+
+func TestConvertUniversalTimeToLocalTime(t *testing.T) {
+	GDay, GMon, GYear, GHrs, GMin, GSec := datetime.ConvertUniversalTimeToLocalTime(30, 06, 2013, 22, 37, 0.0, 1, 0, 4)
+	if GDay != 30 && GMon != 6 && GYear != 2013 && GHrs != 22 && GMin != 36 && GSec != 60 {
+		t.Fatalf("Error while converting Universal Time to Local Time\n. Required: %f %f %f %f %f %f    Got: %f %f %f %f %f %f",
+			1.0, 7.0, 2013.0, 3.0, 36.0, 60.0, GDay, GMon, GYear, GHrs, GMin, GSec)
+	}
+}
+
+func TestConvertUniversalTimeToGreenwichSiderealTime(t *testing.T) {
+	GHrs, GMin, GSec := datetime.ConvertUniversalTimeToGreenwichSiderealTime(22, 04, 1980, 14, 36, 51.67)
+	if GHrs != 4 && GMin != 40 && GSec != 5.23 {
+		t.Fatalf("Error while converting Universal Time to Greenwich Sidereal Time\n. Required: %f %f %f    Got: %f %f %f",
+			4.0, 40.0, 5.23, GHrs, GMin, GSec)
+	}
+}
+
+func TestConvertGreenwichSiderealTimeToUniversalTime(t *testing.T) {
+	GHrs, GMin, GSec := datetime.ConvertGreenwichSiderealTimeToUniversalTime(22, 04, 1980, 4, 40, 5.23)
+	if GHrs != 14 && GMin != 36 && GSec != 51.67 {
+		t.Fatalf("Error while converting Greenwich Sidereal to Universal Time\n. Required: %f %f %f    Got: %f %f %f",
+			14.0, 36.0, 51.67, GHrs, GMin, GSec)
+	}
+}
+
+func TestCalculateLocalSiderealTimeUsingGreenwichSideralTime(t *testing.T) {
+	GHrs, GMin, GSec := datetime.CalculateLocalSiderealTimeUsingGreenwichSideralTime(4, 40, 5.23, -64)
+	if GHrs != 0 && GMin != 24 && GSec != 5.23 {
+		t.Fatalf("Error while converting Greenwich Sidereal to Universal Time\n. Required: %f %f %f    Got: %f %f %f",
+			0.0, 24.0, 5.23, GHrs, GMin, GSec)
+	}
+}
