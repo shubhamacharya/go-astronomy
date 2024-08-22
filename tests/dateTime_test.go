@@ -44,13 +44,13 @@ func TestConvertHrsMinSecToDecimalHrs(t *testing.T) {
 
 func TestConvertDecimalHrsToHrsMinSec(t *testing.T) {
 	Hrs, min, sec := datetime.ConvertDecimalHrsToHrsMinSec(18.524167)
-	if Hrs != 18 || min != 31 || sec != 27 {
+	if math.Abs(Hrs-18.0) > 0.01 || math.Abs(min-31) > 0.01 || math.Abs(sec-27) > 0.01 {
 		t.Fatalf("Error while converting Decimal to Hrs Min Sec\n. Required: %f %f %f  Got: %f %f %f", 18.0, 31.0, 27.0, Hrs, min, sec)
 	}
 }
 
 func TestConvertLocalTimeToUniversalTime(t *testing.T) {
-	UTDay, UTMon, UTYear, UTHrs, UTMin, UTSec := datetime.ConvertLocalTimeToUniversalTime(1, 7, 2013, 3, 37, 0.0, 1, 0, 4)
+	UTDay, UTMon, UTYear, UTHrs, UTMin, UTSec, _ := datetime.ConvertLocalTimeToUniversalTime(1, 7, 2013, 3, 37, 0.0, 1, 0, 4)
 	if UTDay != 30 && UTMon != 6 && UTYear != 2013 && UTHrs != 22 && UTMin != 36 && UTSec != 60 {
 		t.Fatalf("Error while converting Local Time to Universal Time\n. Required: %f %f %f %f %f %f    Got: %f %f %f %f %f %f",
 			30.0, 6.0, 2013.0, 22.0, 36.0, 60.0, UTDay, UTMon, UTYear, UTHrs, UTMin, UTSec)
@@ -66,7 +66,7 @@ func TestConvertUniversalTimeToLocalTime(t *testing.T) {
 }
 
 func TestConvertUniversalTimeToGreenwichSiderealTime(t *testing.T) {
-	GHrs, GMin, GSec := datetime.ConvertUniversalTimeToGreenwichSiderealTime(22, 04, 1980, 14, 36, 51.67)
+	GHrs, GMin, GSec, _ := datetime.ConvertUniversalTimeToGreenwichSiderealTime(22, 04, 1980, 14, 36, 51.67)
 	if GHrs != 4 && GMin != 40 && GSec != 5.23 {
 		t.Fatalf("Error while converting Universal Time to Greenwich Sidereal Time\n. Required: %f %f %f    Got: %f %f %f",
 			4.0, 40.0, 5.23, GHrs, GMin, GSec)
@@ -82,7 +82,7 @@ func TestConvertGreenwichSiderealTimeToUniversalTime(t *testing.T) {
 }
 
 func TestCalculateLocalSiderealTimeUsingGreenwichSideralTime(t *testing.T) {
-	GHrs, GMin, GSec := datetime.CalculateLocalSiderealTimeUsingGreenwichSideralTime(4, 40, 5.23, -64)
+	GHrs, GMin, GSec, _ := datetime.CalculateLocalSiderealTimeUsingGreenwichSideralTime(4, 40, 5.23, -64)
 	if GHrs != 0 && GMin != 24 && GSec != 5.23 {
 		t.Fatalf("Error while converting Greenwich Sidereal to Universal Time\n. Required: %f %f %f    Got: %f %f %f",
 			0.0, 24.0, 5.23, GHrs, GMin, GSec)

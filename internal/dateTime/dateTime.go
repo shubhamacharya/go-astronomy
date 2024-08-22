@@ -136,11 +136,11 @@ func ConvertHrsMinSecToDecimalHrs(Hrs int, min int, sec float64, is12HrClock boo
 func ConvertDecimalHrsToHrsMinSec(decimalHrs float64) (float64, float64, float64) {
 	hrs, fractPart := math.Modf(decimalHrs)
 	min, minFract := math.Modf(fractPart * 60)
-	sec := (math.Round(minFract*60) * 10000) / 10000
+	sec := minFract * 60
 	return hrs, min, sec
 }
 
-func ConvertLocalTimeToUniversalTime(day int, month int, year int, hrs int, min int, sec float64, daylightsavingHrs int, daylightsavingMin int, zoneOffset float64) (float64, float64, float64, float64, float64, float64) {
+func ConvertLocalTimeToUniversalTime(day int, month int, year int, hrs int, min int, sec float64, daylightsavingHrs int, daylightsavingMin int, zoneOffset float64) (float64, float64, float64, float64, float64, float64, float64) {
 	// Adjust for daylight saving time
 	hrs -= daylightsavingHrs
 	min -= daylightsavingMin
@@ -186,7 +186,7 @@ func ConvertLocalTimeToUniversalTime(day int, month int, year int, hrs int, min 
 	UTHrs, UTMin, UTSec := ConvertDecimalHrsToHrsMinSec(decimalTime)
 	UTDay = math.Trunc(UTDay) // Truncate UTDay to get the whole day number
 
-	return UTDay, UTMonth, UTYear, UTHrs, UTMin, UTSec
+	return UTDay, UTMonth, UTYear, UTHrs, UTMin, UTSec, decimalTime
 }
 
 func ConvertUniversalTimeToLocalTime(day float64, month int, year int, hrs int, min int, sec float64, daylightsavingHrs int, daylightsavingMin int, zoneOffset float64) (float64, float64, float64, float64, float64, float64) {
@@ -201,7 +201,7 @@ func ConvertUniversalTimeToLocalTime(day float64, month int, year int, hrs int, 
 	return Gday, calMonth, calYear, GHrs, GMin, GSec
 }
 
-func ConvertUniversalTimeToGreenwichSiderealTime(day float64, month int, year int, hrs int, min int, sec float64) (float64, float64, float64) {
+func ConvertUniversalTimeToGreenwichSiderealTime(day float64, month int, year int, hrs int, min int, sec float64) (float64, float64, float64, float64) {
 	julianDate := ConvertGreenwichDateToJulianDate(day, month, year)
 	elapsedDays := julianDate - 2451545.0
 	centuriesSinceJ2000 := elapsedDays / 36525.0
@@ -228,7 +228,7 @@ func ConvertUniversalTimeToGreenwichSiderealTime(day float64, month int, year in
 
 	GSTHrs, GSTMin, GSTSec := ConvertDecimalHrsToHrsMinSec(gst)
 
-	return GSTHrs, GSTMin, GSTSec
+	return GSTHrs, GSTMin, GSTSec, gst
 }
 
 func ConvertGreenwichSiderealTimeToUniversalTime(day float64, month int, year int, hrs int, min int, sec float64) (float64, float64, float64) {
@@ -262,7 +262,7 @@ func ConvertGreenwichSiderealTimeToUniversalTime(day float64, month int, year in
 	return UTHrs, UTMin, UTSec
 }
 
-func CalculateLocalSiderealTimeUsingGreenwichSideralTime(hrs int, min int, sec float64, geoLong float64) (float64, float64, float64) {
+func CalculateLocalSiderealTimeUsingGreenwichSideralTime(hrs int, min int, sec float64, geoLong float64) (float64, float64, float64, float64) {
 	// TODO: Add Logngitude directions
 	decimalTime := ConvertHrsMinSecToDecimalHrs(hrs, min, sec, false, "")
 	if geoLong < 0 {
@@ -276,7 +276,7 @@ func CalculateLocalSiderealTimeUsingGreenwichSideralTime(hrs int, min int, sec f
 		}
 
 		LSTHrs, LSTMin, LSTSec := ConvertDecimalHrsToHrsMinSec(decimalTime)
-		return LSTHrs, LSTMin, LSTSec
+		return LSTHrs, LSTMin, LSTSec, decimalTime
 
 	} else {
 		// Return error : Geo Longitude must be negative
