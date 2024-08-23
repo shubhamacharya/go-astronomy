@@ -73,3 +73,32 @@ func TestConvertEquatorialToHorizonCoordinates(t *testing.T) {
 		t.Fatalf(`Error while converting Equatorial To Horizon Coordinates. Required: %f %f %f, %f %f %f   Got: %f %f %f, %f %f %f`, 19.33, 20.0, 3.64, 283.27, 16.0, 15.69, altitudeDeg, altitudeMin, altitudeSec, azimuthDeg, azimuthMin, azimuthSec)
 	}
 }
+
+func TestConvertHorizonCoordinatesToEquatorial(t *testing.T) {
+	haHrs, haMin, haSec, decDeg, decMin, decSec := coords.ConvertHorizonCoordinatesToEquatorial(0, 24.0, 05.0, 19.0, 20.0, 03.64, 283.0, 16.0, 15.7, 52.0)
+	const tolerance = 0.01 // Define an acceptable error range
+
+	if math.Abs(haHrs-5.0) > tolerance || math.Abs(haMin-51.0) > tolerance || math.Abs(haSec-44.0) > tolerance &&
+		math.Abs(decDeg-23.0) > tolerance || math.Abs(decMin-13.0) > tolerance || math.Abs(decSec-10.0) > tolerance {
+		t.Fatalf(`Error while converting Horizon To Equatorial Coordinates. Required: %f %f %f, %f %f %f   Got: %f %f %f, %f %f %f`, 5.0, 51.0, 44.0, 23.0, 13.0, 10.0, haHrs, haMin, haSec, decDeg, decMin, decSec)
+	}
+}
+
+func TestCalculateEclipticMeanObliquity(t *testing.T) {
+	obliquityDeg, obliquityMin, obliquitySec, _ := coords.CalculateEclipticMeanObliquity(6.0, 7, 2009)
+	const tolerance = 0.01 // Define an acceptable error range
+
+	if math.Abs(obliquityDeg-23.0) > tolerance || math.Abs(obliquityMin-26.0) > tolerance || math.Abs(obliquitySec-17.0) > tolerance {
+		t.Fatalf(`Error while Calculating Ecliptic Mean Obliquity. Required: %f %f %f  Got: %f %f %f`, 23.0, 26.0, 17.0, obliquityDeg, obliquityMin, obliquitySec)
+	}
+}
+
+func TestConvertEclipticCoordinatesToEquatorial(t *testing.T) {
+	raHrs, raMin, raSec, decDeg, decMin, decSec := coords.ConvertEclipticCoordinatesToEquatorial(6.0, 7, 2009, 139.0, 41.0, 10.0, 4.0, 52.0, 31.0)
+	const tolerance = 0.01 // Define an acceptable error range
+
+	if math.Abs(raHrs-9.0) > tolerance || math.Abs(raMin-34.0) > tolerance || math.Abs(raSec-53.32) > tolerance &&
+		math.Abs(decDeg-19.0) > tolerance || math.Abs(decMin-32.0) > tolerance || math.Abs(decSec-6.01) > tolerance {
+		t.Fatalf(`Error while converting Horizon To Equatorial Coordinates. Required: %f %f %f, %f %f %f   Got: %f %f %f, %f %f %f`, 9.0, 34.0, 53.32, 19.0, 32.0, 6.01, raHrs, raMin, raSec, decDeg, decMin, decSec)
+	}
+}

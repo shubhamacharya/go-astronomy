@@ -99,3 +99,64 @@ func ConvertEquatorialToHorizonCoordinates(
 
 	return altitudeDeg, altitudeMin, altitudeSec, azimuthDeg, azimuthMin, azimuthSec
 }
+
+func ConvertDegreesToRadiance(degrees float64) float64 {
+	return degrees * (math.Pi / 180)
+}
+
+func ConvertRadianceToDegree(radians float64) float64 {
+	return radians * (180 / math.Pi)
+}
+
+func ConvertHorizonCoordinatesToEquatorial(GSTHrs, GSTMin, GSec, altitudeDeg, altitudeMin, altitudeSec, azimuthDeg, azimuthMin, azimuthSec, latitude float64) (float64, float64, float64, float64, float64, float64) {
+	altitudeDecimalDeg := ConvertDegMinSecToDecimalDeg(altitudeDeg, altitudeMin, altitudeSec)
+	azimuthDecimalDeg := ConvertDegMinSecToDecimalDeg(azimuthDeg, azimuthMin, azimuthSec)
+
+	declination := ConvertRadianceToDegree(math.Asin((math.Sin(ConvertDegreesToRadiance(altitudeDecimalDeg)) * math.Sin(ConvertDegreesToRadiance(latitude))) + (math.Cos(ConvertDegreesToRadiance(altitudeDecimalDeg)) * math.Cos(ConvertDegreesToRadiance(latitude)) * math.Cos(ConvertDegreesToRadiance(azimuthDecimalDeg)))))
+	cosInvHourAngle := ConvertRadianceToDegree(math.Acos((math.Sin(ConvertDegreesToRadiance(altitudeDecimalDeg)) - (math.Sin(ConvertDegreesToRadiance(latitude)) * math.Sin(ConvertDegreesToRadiance(declination)))) / (math.Cos(ConvertDegreesToRadiance(latitude)) * math.Cos(ConvertDegreesToRadiance(declination)))))
+
+	hourAngleInDecimalDeg := 0.0
+	if ConvertRadianceToDegree(math.Sin(ConvertDegreesToRadiance(azimuthDecimalDeg))) < 0 {
+		hourAngleInDecimalDeg = cosInvHourAngle
+	} else {
+		hourAngleInDecimalDeg = 360 - cosInvHourAngle
+	}
+	hourAngleInDecimalHrs := ConvertDecimalDegressToDecimalHrs(hourAngleInDecimalDeg)
+
+	haHrs, haMin, haSec := datetime.ConvertDecimalHrsToHrsMinSec(hourAngleInDecimalHrs)
+	decDeg, decMin, decSec := ConvertDecimalDegToDegMinSec(declination)
+
+	return haHrs, haMin, haSec, decDeg, decMin, decSec
+}
+
+func CalculateEclipticMeanObliquity(Gday float64, GMonth, GYear int) (float64, float64, float64, float64) {
+	julianDate := datetime.ConvertGreenwichDateToJulianDate(Gday, GMonth, GYear)
+	timeElapsed := (julianDate - 2451545.0) / 36525.0
+	meanObliquity := 23.439292 - (((46.815 * timeElapsed) + (0.0006 * math.Pow(timeElapsed, 2)) - (0.00181 * math.Pow(timeElapsed, 3))) / 3600)
+	obliquityDeg, obliquityMin, obliquitySec := ConvertDecimalDegToDegMinSec(meanObliquity)
+
+	return obliquityDeg, obliquityMin, obliquitySec, meanObliquity
+
+}
+
+func ConvertEclipticCoordinatesToEquatorial(day float64, month, year int, eclipticLongDeg, eclipticLongMin, eclipticLongSec, eclipticLatDeg, eclipticLatMin, eclipticLatSec float64) (float64, float64, float64, float64, float64, float64) {
+	_, _, _, meanObliquity := CalculateEclipticMeanObliquity(day, month, year)
+	eclipticLongDecimalDeg := ConvertDegMinSecToDecimalDeg(eclipticLongDeg, eclipticLongMin, eclipticLongSec)
+
+	eclipticLatDecimalDeg := ConvertDegMinSecToDecimalDeg(eclipticLatDeg, eclipticLatMin, eclipticLatSec)
+
+	decDecimalDeg := ConvertRadianceToDegree(math.Asin((math.Sin(ConvertDegreesToRadiance(eclipticLatDecimalDeg)) * math.Cos(ConvertDegreesToRadiance(meanObliquity))) + (math.Cos(ConvertDegreesToRadiance(eclipticLatDecimalDeg)) * math.Sin(ConvertDegreesToRadiance(meanObliquity)) * math.Sin(ConvertDegreesToRadiance(eclipticLongDecimalDeg)))))
+
+	y := (math.Sin(ConvertDegreesToRadiance(eclipticLongDecimalDeg)) * math.Cos(ConvertDegreesToRadiance(meanObliquity))) - (math.Tan(ConvertDegreesToRadiance(eclipticLatDecimalDeg)) * math.Sin(ConvertDegreesToRadiance(meanObliquity)))
+
+	x := math.Cos(ConvertDegreesToRadiance(eclipticLongDecimalDeg))
+
+	raDeg := ConvertRadianceToDegree(math.Atan2(ConvertDegreesToRadiance(y), ConvertDegreesToRadiance(x)))
+
+	raDecimalHrs := ConvertDecimalDegressToDecimalHrs(raDeg)
+
+	decDeg, decMin, decSec := ConvertDecimalDegToDegMinSec(decDecimalDeg)
+	raHrs, raMins, raSecs := datetime.ConvertDecimalHrsToHrsMinSec(raDecimalHrs)
+
+	return raHrs, raMins, raSecs, decDeg, decMin, decSec
+}
