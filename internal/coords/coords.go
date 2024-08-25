@@ -13,7 +13,13 @@ func ConvertDecimalDegToDegMinSec(decimalDeg float64) (float64, float64, float64
 }
 
 func ConvertDegMinSecToDecimalDeg(deg, min, sec float64) float64 {
-	return float64(deg + ((min + (sec / 60)) / 60))
+	decimalDeg := math.Abs(deg) + (min / 60) + (sec / 3600)
+
+	if deg < 0 {
+		return -decimalDeg
+	} else {
+		return decimalDeg
+	}
 }
 
 func ConvertDecimalHrsToDecimalDegress(decimalHrs float64) float64 {
@@ -159,4 +165,81 @@ func ConvertEclipticCoordinatesToEquatorial(day float64, month, year int, eclipt
 	raHrs, raMins, raSecs := datetime.ConvertDecimalHrsToHrsMinSec(raDecimalHrs)
 
 	return raHrs, raMins, raSecs, decDeg, decMin, decSec
+}
+
+func ConvertEquatorialCoordinatesToEcliptic(Gday float64, GMonth, GYear, raHrs, raMin int, raSec, decDeg, decMin, decSec float64) (eclipticLongDeg, eclipticLongMin, eclipticLongSec, eclipticLatDeg, eclipticLatMin, eclipticLatSec float64) {
+	raDecimalDeg := ConvertDecimalHrsToDecimalDegress(datetime.ConvertHrsMinSecToDecimalHrs(raHrs, raMin, raSec, false, ""))
+	decDecimalDeg := ConvertDegMinSecToDecimalDeg(decDeg, decMin, decSec)
+	_, _, _, meanObliquity := CalculateEclipticMeanObliquity(Gday, GMonth, GYear)
+	// fmt.Printf("meanObliquity : %f\n", meanObliquity)
+
+	latDecimal := ConvertRadianceToDegree(math.Asin((math.Sin(ConvertDegreesToRadiance(decDecimalDeg)) * math.Cos(ConvertDegreesToRadiance(meanObliquity))) - (math.Cos(ConvertDegreesToRadiance(decDecimalDeg)) * math.Sin(ConvertDegreesToRadiance(meanObliquity)) * math.Sin(ConvertDegreesToRadiance(raDecimalDeg)))))
+	// fmt.Printf("sineB : %f\n", ConvertRadianceToDegree(sineB))
+
+	y := (math.Sin(ConvertDegreesToRadiance(raDecimalDeg)) * math.Cos(ConvertDegreesToRadiance(meanObliquity))) + (math.Tan(ConvertDegreesToRadiance(decDecimalDeg)) * math.Sin(ConvertDegreesToRadiance(meanObliquity)))
+	x := math.Cos(ConvertDegreesToRadiance(raDecimalDeg))
+	longDecimal := ConvertRadianceToDegree(math.Atan2(y, x))
+
+	latDeg, latMin, latSec := ConvertDecimalDegToDegMinSec(latDecimal)
+	longDeg, longMin, longSec := ConvertDecimalDegToDegMinSec(longDecimal)
+
+	return latDeg, latMin, latSec, longDeg, longMin, longSec
+}
+
+func ConvertEquatorialCoordinateToGalactic(raHrs, raMin int, raSec, decDeg, decMin, decSec float64) (float64, float64, float64, float64, float64, float64) {
+	raDecimalDeg := ConvertDecimalHrsToDecimalDegress(datetime.ConvertHrsMinSecToDecimalHrs(raHrs, raMin, raSec, false, ""))
+	decDecimalDeg := ConvertDegMinSecToDecimalDeg(decDeg, decMin, decSec)
+
+	b := ConvertRadianceToDegree(math.Asin((math.Cos(ConvertDegreesToRadiance(decDecimalDeg)) * math.Cos(ConvertDegreesToRadiance(27.4)) * math.Cos(ConvertDegreesToRadiance(raDecimalDeg)-ConvertDegreesToRadiance(192.25))) + (math.Sin(ConvertDegreesToRadiance(decDecimalDeg)) * math.Sin(ConvertDegreesToRadiance(27.4)))))
+
+	y := math.Sin(ConvertDegreesToRadiance(decDecimalDeg)) - math.Sin(ConvertDegreesToRadiance(b))*math.Sin(ConvertDegreesToRadiance(27.4))
+	x := math.Cos(ConvertDegreesToRadiance(decDecimalDeg)) * math.Sin(ConvertDegreesToRadiance(raDecimalDeg)-ConvertDegreesToRadiance(192.25)) * math.Cos(ConvertDegreesToRadiance(27.4))
+	l := ConvertRadianceToDegree(math.Atan2(y, x)) + 33.0
+
+	if l < 0 {
+		l += 360
+	}
+	if l >= 360 {
+		l -= 360
+	}
+
+	lDeg, lMin, lSec := ConvertDecimalDegToDegMinSec(l)
+	bDeg, bMin, bSec := ConvertDecimalDegToDegMinSec(b)
+
+	return lDeg, lMin, lSec, bDeg, bMin, bSec
+}
+
+func ConvertGalacticCoordinateToEquatorial(lHrs, lMin, lSec, bDeg, bMin, bSec float64) (float64, float64, float64, float64, float64, float64) {
+	lDecimalDeg := ConvertDegMinSecToDecimalDeg(lHrs, lMin, lSec)
+	bDecimalDeg := ConvertDegMinSecToDecimalDeg(bDeg, bMin, bSec)
+	decDecimalDeg := ConvertRadianceToDegree(math.Asin((math.Cos(ConvertDegreesToRadiance(bDecimalDeg)) * math.Cos(ConvertDegreesToRadiance(27.4)) * math.Sin(ConvertDegreesToRadiance(lDecimalDeg)-ConvertDegreesToRadiance(33.0))) + (math.Sin(ConvertDegreesToRadiance(bDecimalDeg)) * math.Sin(ConvertDegreesToRadiance(27.4)))))
+
+	y := math.Cos(ConvertDegreesToRadiance(bDecimalDeg)) * math.Cos(ConvertDegreesToRadiance(lDecimalDeg-33.0))
+	x := (math.Sin(ConvertDegreesToRadiance(bDecimalDeg)) * math.Cos(ConvertDegreesToRadiance(27.4))) - (math.Cos(ConvertDegreesToRadiance(bDecimalDeg)) * math.Sin(ConvertDegreesToRadiance(27.4)) * math.Sin(ConvertDegreesToRadiance(lDecimalDeg-33.0)))
+	raDecimalDeg := ConvertRadianceToDegree(math.Atan2(y, x)) + 192.25
+
+	if raDecimalDeg < 0 {
+		raDecimalDeg += 360
+	}
+	if raDecimalDeg >= 360 {
+		raDecimalDeg -= 360
+	}
+
+	raHrs, raMin, raSec := datetime.ConvertDecimalHrsToHrsMinSec(ConvertDecimalDegressToDecimalHrs(raDecimalDeg))
+	decDeg, decMin, decSec := ConvertDecimalDegToDegMinSec(decDecimalDeg)
+
+	return raHrs, raMin, raSec, decDeg, decMin, decSec
+}
+
+func CalculateAngleBetweenTwoCelestialObjects(p1RAHrs, p1RAMin int, p1RASec, p1DecDeg, p1DecMin, p1DecSec float64, p2RAHrs, p2RAMin int, p2RASec, p2DecDeg, p2DecMin, p2DecSec float64) (float64, float64, float64) {
+	p1RADecimalHrs := datetime.ConvertHrsMinSecToDecimalHrs(p1RAHrs, p1RAMin, p1RASec, false, "")
+	p1DecDecimalDeg := ConvertDegMinSecToDecimalDeg(p1DecDeg, p1DecMin, p1DecSec)
+	p2RADecimalHrs := datetime.ConvertHrsMinSecToDecimalHrs(p2RAHrs, p2RAMin, p2RASec, false, "")
+	p2DecDecimalDeg := ConvertDegMinSecToDecimalDeg(p2DecDeg, p2DecMin, p2DecSec)
+
+	RADiffInDegress := ConvertDecimalHrsToDecimalDegress(p1RADecimalHrs - p2RADecimalHrs)
+
+	angle := ConvertRadianceToDegree(math.Acos((math.Sin(ConvertDegreesToRadiance(p1DecDecimalDeg)) * math.Sin(ConvertDegreesToRadiance(p2DecDecimalDeg))) + (math.Cos(ConvertDegreesToRadiance(p1DecDecimalDeg)) * math.Cos(ConvertDegreesToRadiance(p2DecDecimalDeg)) * math.Cos(ConvertDegreesToRadiance(RADiffInDegress)))))
+	angleDeg, angleMin, angleSec := ConvertDecimalDegToDegMinSec(angle)
+	return angleDeg, angleMin, angleSec
 }

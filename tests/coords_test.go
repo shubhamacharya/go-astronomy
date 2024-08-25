@@ -102,3 +102,42 @@ func TestConvertEclipticCoordinatesToEquatorial(t *testing.T) {
 		t.Fatalf(`Error while converting Horizon To Equatorial Coordinates. Required: %f %f %f, %f %f %f   Got: %f %f %f, %f %f %f`, 9.0, 34.0, 53.32, 19.0, 32.0, 6.01, raHrs, raMin, raSec, decDeg, decMin, decSec)
 	}
 }
+
+func TestConvertEquatorialCoordinatesToEcliptic(t *testing.T) {
+	latDeg, latMin, latSec, longDeg, longMin, longSec := coords.ConvertEquatorialCoordinatesToEcliptic(6.0, 7, 2009, 9.0, 34.0, 53.32, 19.0, 32.0, 6.01)
+	const tolerance = 0.01 // Define an acceptable error range
+
+	if math.Abs(longDeg-139.0) > tolerance || math.Abs(longMin-41.0) > tolerance || math.Abs(longSec-9.98) > tolerance &&
+		math.Abs(latDeg-4.0) > tolerance || math.Abs(latMin-52.0) > tolerance || math.Abs(latSec-30.99) > tolerance {
+		t.Fatalf(`Error while convert Equatorial Coordinates to Ecliptic. Required: %f %f %f, %f %f %f   Got: %f %f %f, %f %f %f`, 139.0, 41.0, 9.98, 4.0, 52.0, 30.99, longDeg, longMin, longSec, latDeg, latMin, latSec)
+	}
+}
+
+func TestConvertEquatorialCoordinateToGalactic(t *testing.T) {
+	lDeg, lMin, lSec, bDeg, bMin, bSec := coords.ConvertEquatorialCoordinateToGalactic(10.0, 21.0, 0.0, 10.0, 3.0, 11.00)
+	const tolerance = 0.01 // Define an acceptable error range
+
+	if math.Abs(lDeg-232.0) > tolerance || math.Abs(lMin-14.0) > tolerance || math.Abs(lSec-52.38) > tolerance &&
+		math.Abs(bDeg-51.0) > tolerance || math.Abs(bMin-7.0) > tolerance || math.Abs(bSec-20.16) > tolerance {
+		t.Fatalf(`Error while convert Equatorial Coordinate To Galactic. Required: %f %f %f, %f %f %f   Got: %f %f %f, %f %f %f`, 232.0, 14.0, 52.38, 51.0, 7.0, 20.16, lDeg, lMin, lSec, bDeg, bMin, bSec)
+	}
+}
+
+func TestConvertGalacticCoordinateToEquatorial(t *testing.T) {
+	lDeg, lMin, lSec, bDeg, bMin, bSec := coords.ConvertGalacticCoordinateToEquatorial(232.0, 14.0, 52.0, 51.0, 7.0, 20.00)
+	const tolerance = 0.01 // Define an acceptable error range
+
+	if math.Abs(lDeg-10.0) > tolerance || math.Abs(lMin-20.0) > tolerance || math.Abs(lSec-59.98) > tolerance &&
+		math.Abs(bDeg-10.0) > tolerance || math.Abs(bMin-3.0) > tolerance || math.Abs(bSec-11.11) > tolerance {
+		t.Fatalf(`Error while convert Galactic Coordinate To Equatorial. Required: %f %f %f, %f %f %f   Got: %f %f %f, %f %f %f`, 10.0, 20.0, 59.98, 10.0, 3.0, 11.11, lDeg, lMin, lSec, bDeg, bMin, bSec)
+	}
+}
+
+func TestCalculateAngleBetweenTwoCelestialObjects(t *testing.T) {
+	Deg, Min, Sec := coords.CalculateAngleBetweenTwoCelestialObjects(5.0, 13.0, 31.7, -8.0, 13.0, 30.0, 6.0, 44.0, 13.4, -16.0, 41.0, 11.0)
+	const tolerance = 0.01 // Define an acceptable error range
+
+	if math.Abs(Deg-23.0) > tolerance || math.Abs(Min-40.0) > tolerance || math.Abs(Sec-25.85) > tolerance {
+		t.Fatalf(`Error while Calculating Angle Between Two Celestial Objects. Required: %f %f %f   Got: %f %f %f`, 23.0, 40.0, 25.85, Deg, Min, Sec)
+	}
+}
