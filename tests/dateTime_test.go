@@ -82,9 +82,17 @@ func TestConvertGreenwichSiderealTimeToUniversalTime(t *testing.T) {
 }
 
 func TestCalculateLocalSiderealTimeUsingGreenwichSideralTime(t *testing.T) {
-	GHrs, GMin, GSec, _ := datetime.CalculateLocalSiderealTimeUsingGreenwichSideralTime(4, 40, 5.23, -64)
-	if GHrs != 0 && GMin != 24 && GSec != 5.23 {
-		t.Fatalf("Error while converting Greenwich Sidereal to Universal Time\n. Required: %f %f %f    Got: %f %f %f",
-			0.0, 24.0, 5.23, GHrs, GMin, GSec)
+	LSTHrs, LSTMin, LSTSec, _ := datetime.CalculateLocalSiderealTimeUsingGreenwichSideralTime(4, 40, 5.23, -64)
+	if LSTHrs != 0 && LSTMin != 24 && LSTSec != 5.23 {
+		t.Fatalf("Error while converting Local Sidereal Time Using Greenwich Sideral Time\n. Required: %f %f %f    Got: %f %f %f",
+			0.0, 24.0, 5.23, LSTHrs, LSTMin, LSTSec)
+	}
+}
+
+func TestCalculateGreenwichSideralTimeUsingLocalSiderealTime(t *testing.T) {
+	GHrs, GMin, GSec, _ := datetime.CalculateGreenwichSideralTimeUsingLocalSiderealTime(0, 24, 5.23, -64)
+	if GHrs != 4.0 && GMin != 40.0 && GSec != 5.23 {
+		t.Fatalf("Error while converting Greenwich Sideral Time Using Local Sidereal Time\n. Required: %f %f %f    Got: %f %f %f",
+			4.0, 40.0, 5.23, GHrs, GMin, GSec)
 	}
 }

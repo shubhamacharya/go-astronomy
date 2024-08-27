@@ -283,5 +283,25 @@ func CalculateLocalSiderealTimeUsingGreenwichSideralTime(hrs int, min int, sec f
 		fmt.Println("\nGeo Longitude must be negative")
 		panic("\nGeo Longitude must be negative\n")
 	}
-	// return 0.0, 0.0, 0.0
+}
+
+func CalculateGreenwichSideralTimeUsingLocalSiderealTime(hrs int, min int, sec float64, geoLong float64) (float64, float64, float64, float64) {
+	decimalTime := ConvertHrsMinSecToDecimalHrs(hrs, min, sec, false, "")
+	if geoLong < 0 {
+		decimalTime -= (geoLong / 15)
+		for decimalTime < 0 {
+			decimalTime += 24
+		}
+		for decimalTime >= 24 {
+			decimalTime -= 24
+		}
+		GSTHrs, GSTMin, GSTSec := ConvertDecimalHrsToHrsMinSec(decimalTime)
+		return GSTHrs, GSTMin, GSTSec, decimalTime
+
+	} else {
+		// Return error : Geo Longitude must be negative
+		fmt.Println("\nGeo Longitude must be negative")
+		panic("\nGeo Longitude must be negative\n")
+	}
+
 }

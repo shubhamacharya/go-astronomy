@@ -141,3 +141,52 @@ func TestCalculateAngleBetweenTwoCelestialObjects(t *testing.T) {
 		t.Fatalf(`Error while Calculating Angle Between Two Celestial Objects. Required: %f %f %f   Got: %f %f %f`, 23.0, 40.0, 25.85, Deg, Min, Sec)
 	}
 }
+
+func TestCalculateRisingAndSettingTime(t *testing.T) {
+	UTrHrs, UTrMin, UTrSec, UTsHrs, UTsMin, UTsSec := coords.CalculateRisingAndSettingTime(24.0, 8, 2010, 23.0, 39.0, 20.0, 21.0, 42.0, 0.0, 30.0, 64.0, 34)
+	const tolerance = 0.01 // Define an acceptable error range
+
+	if math.Abs(UTrHrs-14.0) > tolerance || math.Abs(UTrMin-16.0) > tolerance || math.Abs(UTrSec-18.02) > tolerance &&
+		math.Abs(UTsHrs-4.0) > tolerance || math.Abs(UTsMin-10.0) > tolerance || math.Abs(UTsSec-1.15) > tolerance {
+		t.Fatalf(`Error while Calculating Rising And Setting Time. Required: Rising = %f %f %f  Setting = %f %f %f   Got: Rising = %f %f %f  Setting = %f %f %f`, 14.0, 16.0, 18.02, 4.0, 10.0, 1.15, UTrHrs, UTrMin, UTrSec, UTsHrs, UTsMin, UTsSec)
+	}
+}
+
+func TestCalculatePrecession(t *testing.T) {
+	alpha1Hrs, alpha1Min, alpha1Sec, delta1Deg, delta1Min, delta1Sec := coords.CalculatePrecession(1979.5, 1950.0, 9.0, 10.0, 43.0, 14.0, 23.0, 25.0)
+	const tolerance = 0.01 // Define an acceptable error range
+
+	if math.Abs(alpha1Hrs-9.0) > tolerance || math.Abs(alpha1Min-12.0) > tolerance || math.Abs(alpha1Sec-20.47) > tolerance &&
+		math.Abs(delta1Deg-14.0) > tolerance || math.Abs(delta1Min-16.0) > tolerance || math.Abs(delta1Sec-7.83) > tolerance {
+		t.Fatalf(`Error while Calculating Precession. Required:  %f %f %f   %f %f %f   Got: Rising = %f %f %f  Setting = %f %f %f`, 9.0, 12.0, 20.47, 14.0, 16.0, 7.83, alpha1Hrs, alpha1Min, alpha1Sec, delta1Deg, delta1Min, delta1Sec)
+	}
+}
+
+func TestCalculateNutation(t *testing.T) {
+	nutationInLong, nutationInObliquity := coords.CalculateNutation(1.0, 9, 1988)
+	const tolerance = 0.01 // Define an acceptable error range
+
+	if math.Abs(nutationInLong-5.49) > tolerance || math.Abs(nutationInObliquity-9.24) > tolerance {
+		t.Fatalf(`Error while Calculating Nutation. Required: %f  %f   Got: %f  %f`, 5.49, 9.24, nutationInLong, nutationInObliquity)
+	}
+}
+
+func TestCalculateAberration(t *testing.T) {
+	correctedLambdaDeg, correctedLambdaMin, correctedLambdaSec, correctedBetaDeg, correctedBetaMin, correctedBetaSec := coords.CalculateAberration(8.0, 9, 1988, 352.0, 37.0, 10.1, -1, 32, 56.4, 165.0, 33.0, 44.1)
+	const tolerance = 0.01 // Define an acceptable error range
+
+	if math.Abs(correctedLambdaDeg-352.0) > tolerance || math.Abs(correctedLambdaMin-37.0) > tolerance || math.Abs(correctedLambdaSec-30.45) > tolerance &&
+		math.Abs(correctedBetaDeg-(-1.0)) > tolerance || math.Abs(correctedBetaMin-32.0) > tolerance || math.Abs(correctedBetaSec-56.33) > tolerance {
+		t.Fatalf(`Error while Calculating Aberration. Required:  %f %f %f    %f %f %f   Got: %f %f %f    %f %f %f`, 352.0, 37.0, 30.45, -1.0, 32.0, 56.33, correctedLambdaDeg, correctedLambdaMin, correctedLambdaSec, correctedBetaDeg, correctedBetaMin, correctedBetaSec)
+	}
+}
+
+func TestCalculateRefraction(t *testing.T) {
+	HaHrs, HaMin, HaSec, DecDeg, DecMin, DecSec := coords.CalculateRefraction(5.0, 51.0, 44.0, 23.0, 13.0, 10.0, 52.0, 13.0, 1008.0)
+	const tolerance = 0.01 // Define an acceptable error range
+
+	if math.Abs(HaHrs-5.0) > tolerance || math.Abs(HaMin-51.0) > tolerance || math.Abs(HaSec-36.26) > tolerance &&
+		math.Abs(DecDeg-23.0) > tolerance || math.Abs(DecMin-15.0) > tolerance || math.Abs(DecSec-13.91) > tolerance {
+		t.Fatalf(`Error while Calculating Refraction. Required:  %f %f %f    %f %f %f   Got: %f %f %f    %f %f %f`, 5.0, 51.0, 36.26, -23.0, 15.0, 13.91, HaHrs, HaMin, HaSec, DecDeg, DecMin, DecSec)
+	}
+}
