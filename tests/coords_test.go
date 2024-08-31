@@ -1,21 +1,24 @@
 package tests
 
 import (
-	coords "go-astronomy/internal/coords"
+	"go-astronomy/internal/coords"
 	datetime "go-astronomy/internal/dateTime"
+	"go-astronomy/internal/macros"
 	"math"
 	"testing"
 )
 
 func TestConvertDecimalDegToDegMinSec(t *testing.T) {
-	Deg, Mins, Sec := coords.ConvertDecimalDegToDegMinSec(182.524167)
-	if Deg != 182 || Mins != 31 || Sec != 27 {
+	Deg, Mins, Sec := macros.ConvertDecimalDegToDegMinSec(182.524167)
+	const tolerance = 0.01 // Define an acceptable error range
+
+	if math.Abs(Deg-182) > tolerance || math.Abs(Mins-31) > tolerance || math.Abs(Sec-27) > tolerance {
 		t.Fatalf(`Error while converting degrees to Deg Min Sec. Required: %f %f %f    Got: %f %f %f`, 182.0, 31.0, 27.0, Deg, Mins, Sec)
 	}
 }
 
 func TestConvertDegMinSecToDecimalDeg(t *testing.T) {
-	decimalDeg := coords.ConvertDegMinSecToDecimalDeg(182, 31, 27)
+	decimalDeg := macros.ConvertDegMinSecToDecimalDeg(182, 31, 27)
 	var expectedDeg float64 = 182.524167
 	const tolerance = 0.000001 // Define an acceptable error range
 
@@ -26,7 +29,7 @@ func TestConvertDegMinSecToDecimalDeg(t *testing.T) {
 
 func TestConvertDecimalHrsToDecimalDegress(t *testing.T) {
 	decimalDeg := coords.ConvertDecimalHrsToDecimalDegress(datetime.ConvertHrsMinSecToDecimalHrs(9, 36, 10.2, false, ""))
-	deg, min, sec := coords.ConvertDecimalDegToDegMinSec(decimalDeg)
+	deg, min, sec := macros.ConvertDecimalDegToDegMinSec(decimalDeg)
 
 	if math.Abs(deg-144.0) > 0.001 || math.Abs(min-2.0) > 0.001 || math.Abs(sec-33.0) > 0.001 {
 		t.Fatalf(`Error while converting Decimal Hrs To Decimal Degress. Required: %f %f %f   Got: %f %f %f`, 144.0, 2.0, 33.0, deg, min, sec)
@@ -34,7 +37,7 @@ func TestConvertDecimalHrsToDecimalDegress(t *testing.T) {
 }
 
 func TestConvertDecimalDegressToDecimalHrs(t *testing.T) {
-	decimalHrs := coords.ConvertDecimalDegressToDecimalHrs(coords.ConvertDegMinSecToDecimalDeg(144.0, 2.0, 33.0))
+	decimalHrs := macros.ConvertDecimalDegressToDecimalHrs(macros.ConvertDegMinSecToDecimalDeg(144.0, 2.0, 33.0))
 	hrs, min, sec := datetime.ConvertDecimalHrsToHrsMinSec(decimalHrs)
 	const tolerance = 0.000001 // Define an acceptable error range
 
@@ -44,7 +47,7 @@ func TestConvertDecimalDegressToDecimalHrs(t *testing.T) {
 }
 
 func TestConverRightAscensionToHourAngle(t *testing.T) {
-	haHrs, haMin, haSec, _ := coords.ConverRightAscensionToHourAngle(22, 4, 1980, 14, 36, 51.67, 18.0, 32.0, 21.0, -64, 0, 0, -4)
+	haHrs, haMin, haSec, _ := coords.ConverRightAscensionToHourAngle(22, 4, 1980, 14, 36, 51.67, 18.0, 32.0, 21.0, -64, 0, 0, -4, true)
 	// hrs, min, sec := datetime.ConvertDecimalHrsToHrsMinSec(decimalHrs)
 	const tolerance = 0.01 // Define an acceptable error range
 
@@ -85,7 +88,7 @@ func TestConvertHorizonCoordinatesToEquatorial(t *testing.T) {
 }
 
 func TestCalculateEclipticMeanObliquity(t *testing.T) {
-	obliquityDeg, obliquityMin, obliquitySec, _ := coords.CalculateEclipticMeanObliquity(6.0, 7, 2009)
+	obliquityDeg, obliquityMin, obliquitySec, _ := macros.CalculateEclipticMeanObliquity(6.0, 7, 2009)
 	const tolerance = 0.01 // Define an acceptable error range
 
 	if math.Abs(obliquityDeg-23.0) > tolerance || math.Abs(obliquityMin-26.0) > tolerance || math.Abs(obliquitySec-17.0) > tolerance {
@@ -94,7 +97,7 @@ func TestCalculateEclipticMeanObliquity(t *testing.T) {
 }
 
 func TestConvertEclipticCoordinatesToEquatorial(t *testing.T) {
-	raHrs, raMin, raSec, decDeg, decMin, decSec := coords.ConvertEclipticCoordinatesToEquatorial(6.0, 7, 2009, 139.0, 41.0, 10.0, 4.0, 52.0, 31.0)
+	raHrs, raMin, raSec, decDeg, decMin, decSec := macros.ConvertEclipticCoordinatesToEquatorial(6.0, 7, 2009, 139.0, 41.0, 10.0, 4.0, 52.0, 31.0)
 	const tolerance = 0.01 // Define an acceptable error range
 
 	if math.Abs(raHrs-9.0) > tolerance || math.Abs(raMin-34.0) > tolerance || math.Abs(raSec-53.32) > tolerance &&
@@ -188,5 +191,41 @@ func TestCalculateRefraction(t *testing.T) {
 	if math.Abs(HaHrs-5.0) > tolerance || math.Abs(HaMin-51.0) > tolerance || math.Abs(HaSec-36.26) > tolerance &&
 		math.Abs(DecDeg-23.0) > tolerance || math.Abs(DecMin-15.0) > tolerance || math.Abs(DecSec-13.91) > tolerance {
 		t.Fatalf(`Error while Calculating Refraction. Required:  %f %f %f    %f %f %f   Got: %f %f %f    %f %f %f`, 5.0, 51.0, 36.26, -23.0, 15.0, 13.91, HaHrs, HaMin, HaSec, DecDeg, DecMin, DecSec)
+	}
+}
+
+func TestCalculateGeocentricParallax(t *testing.T) {
+	pSin, pCos := coords.CalculateGeocentricParallax(60.0, 100.0, 50.0)
+	const tolerance = 0.01 // Define an acceptable error range
+
+	if math.Abs(pSin-0.762422) > tolerance || math.Abs(pCos-0.644060) > tolerance {
+		t.Fatalf(`Error while Calculating GeocentricParallax. Required:  %f %f Got: %f %f`, 0.762422, 0.644060, pSin, pCos)
+	}
+}
+
+func TestCalculateParallaxCorrections(t *testing.T) {
+	// Test data for moon
+	raMoonHrs, raMoonMin, raMoonSec, decMoonDeg, decMoonMin, decMoonSec := coords.CalculateParallaxCorrections(26.0, 2, 1979, 16.0, 45.0, 0.0, 60.0, 100.0, 50.0, 22.0, 35.0, 19.0, -7.0, 41.0, 13.0, 1.0, 1.0, 9.0, 0.0)
+	// Test data for sun and other planets
+	raHrs, raMin, raSec, decDeg, decMin, decSec := coords.CalculateParallaxCorrections(26.0, 2, 1979, 16.0, 45.0, 0.0, 60.0, 100.0, 50.0, 22.0, 36.0, 44.0, -8.0, 44.0, 24.0, 0.0, 0.0, 0.0, 0.9901)
+	const tolerance = 0.01 // Define an acceptable error range
+
+	if math.Abs(raMoonHrs-22.0) > tolerance || math.Abs(raMoonMin-36.0) > tolerance || math.Abs(raMoonSec-43.21) > tolerance &&
+		math.Abs(decMoonDeg-(-8.0)) > tolerance || math.Abs(decMoonMin-32.0) > tolerance || math.Abs(decMoonSec-17.39) > tolerance {
+		t.Fatalf(`Error while Calculating Parallax Corrections for Moon. Required:  %f %f %f    %f %f %f   Got: %f %f %f    %f %f %f`, 22.0, 36.0, 43.21, -8.0, 32.0, 17.39, raMoonHrs, raMoonMin, raMoonSec, decMoonDeg, decMoonMin, decMoonSec)
+	}
+
+	if math.Abs(raHrs-22.0) > tolerance || math.Abs(raMin-36.0) > tolerance || math.Abs(raSec-44.00) > tolerance &&
+		math.Abs(decDeg-(-8.0)) > tolerance || math.Abs(decMin-44.0) > tolerance || math.Abs(decSec-31.43) > tolerance {
+		t.Fatalf(`Error while Calculating Parallax Corrections for sun and other planets. Required:  %f %f %f    %f %f %f   Got: %f %f %f    %f %f %f`, 22.0, 36.0, 44.00, -8.0, 44.0, 31.43, raHrs, raMin, raSec, decDeg, decMin, decSec)
+	}
+}
+
+func TestCalculateHeliographicCoordinates(t *testing.T) {
+	longitude, latitude := coords.CalculateHeliographicCoordinates(1.0, 5.0, 1988.0, 0, 0, 0, 40.0, 50.0, 37.0, 220.0, 10.5, 0, 15.0, 52.0)
+	const tolerance = 0.01 // Define an acceptable error range
+
+	if math.Abs(longitude-(-19.94)) > tolerance || math.Abs(latitude-143.27) > tolerance {
+		t.Fatalf(`Error while Calculating Heliographic Coordinates. Required:  %f %f Got: %f %f`, -19.94, 143.27, longitude, latitude)
 	}
 }

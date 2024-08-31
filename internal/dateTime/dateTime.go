@@ -42,6 +42,34 @@ func CalculateDateOfEaster(year int) (int, int) {
 	return day, month
 }
 
+func IsLeapYear(year float64) bool {
+	return (int(year)%4 == 0 && int(year)%100 != 0) || (int(year)%400 == 0)
+}
+
+func CalculateDayNumber(day, month, year float64) float64 {
+	var dayNumber float64
+	var isLeap bool = IsLeapYear(year)
+
+	if month > 2 {
+		dayNumber, _ = math.Modf((month + 1) * 30.6)
+		if isLeap {
+			dayNumber -= 62
+		} else {
+			dayNumber -= 63
+		}
+	} else {
+		dayNumber = month - 1
+		if isLeap {
+			dayNumber *= 62
+		} else {
+			dayNumber *= 63
+		}
+		dayNumber, _ = math.Modf(dayNumber / 2)
+	}
+
+	return dayNumber + day
+}
+
 func ConvertGreenwichDateToJulianDate(day float64, month, year int) float64 {
 	var correctionFactor, daysInYear, daysInMonth float64
 

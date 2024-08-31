@@ -20,6 +20,13 @@ func TestConvertToJulianDate(t *testing.T) {
 	}
 }
 
+func TestCalculateDayNumberSinceEpoch(t *testing.T) {
+	dayNo := datetime.CalculateDayNumber(27, 07, 2003)
+	if math.Abs(dayNo - 208) > 0.01 {
+		t.Fatalf(`Error while calculating Day Number Since Epoch. Required: %f    Got: %f`, 208.0, dayNo)
+	}
+}
+
 func TestConvertToGreenwichDate(t *testing.T) {
 	day, month, year := datetime.ConvertJulianDateToGreenwichDate(2455002.25)
 	if day != 19.75 || month != 6 || year != 2009 {
