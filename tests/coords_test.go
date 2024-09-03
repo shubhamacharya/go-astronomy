@@ -229,3 +229,30 @@ func TestCalculateHeliographicCoordinates(t *testing.T) {
 		t.Fatalf(`Error while Calculating Heliographic Coordinates. Required:  %f %f Got: %f %f`, -19.94, 143.27, longitude, latitude)
 	}
 }
+
+func TestCalculateCarringtonRotationNumbers(t *testing.T) {
+	CRN := coords.CalculateCarringtonRotationNumbers(27.0, 1, 1975)
+	const tolerance = 0.01 // Define an acceptable error range
+
+	if math.Abs(CRN-1624.0) > tolerance {
+		t.Fatalf(`Error while Calculating Carrington Rotation Numbers. Required:  %f Got: %f`, 1624.0, CRN)
+	}
+}
+
+func TestCalculateSelenographicCoordinatesOfMoon(t *testing.T) {
+	le, be, C := coords.CalculateSelenographicCoordinatesOfMoon(1.0, 5, 1988, 209.12, -3.08, 23.4433)
+	const tolerance = 0.01 // Define an acceptable error range
+
+	if math.Abs(le-(-4.88)) > tolerance || math.Abs(be-4.04) > tolerance || math.Abs(C-19.78) > tolerance {
+		t.Fatalf(`Error while Calculating Selenographic Coordinates of Moon. Required: le : %f\tbe : %f\tC : %f Got: le : %f\tbe : %f\tC : %f`, -4.88, 4.04, 19.78, le, be, C)
+	}
+}
+
+func TestCalculateSelenographicCoordinatesOfSun(t *testing.T) {
+	ls, bs, colongitude := coords.CalculateSelenographicCoordinatesOfSun(1.0, 5, 1988, 0, 0, 0, 209.12, -3.08, 23.4433, 55.952, 1.0076, 40.8437)
+	const tolerance = 0.01 // Define an acceptable error range
+
+	if math.Abs(ls-(6.81)) > tolerance || math.Abs(bs-1.18) > tolerance || math.Abs(colongitude-83.18) > tolerance {
+		t.Fatalf(`Error while Calculating Selenographic Coordinates of Sun. Required: ls : %f\tbs : %f\tcolongitude : %f Got: ls : %f\tbs : %f\tcolongitude : %f`, 6.81, 1.18, 19.78, ls, bs, colongitude)
+	}
+}

@@ -131,3 +131,25 @@ func CalculatePositionOfSun(GDay, GMonth, GYear float64, UTHrs, UTMins int, UTSe
 	raHrs, raMin, raSec, decDeg, decMin, decSec := ConvertEclipticCoordinatesToEquatorial(GDay, int(GMonth), int(GYear), lambdaDeg, lambdaMin, lambdaSec, 0, 0, 0)
 	return raHrs, raMin, raSec, decDeg, decMin, decSec, lambda
 }
+
+func AdjustAngleInQuadrant(x, y, A float64) float64 {
+	// Check the signs of x and y to determine the quadrant
+	if x < 0 && y > 0 {
+		// Second quadrant
+		A = 180 - A
+	} else if x < 0 && y < 0 {
+		// Third quadrant
+		A = 180 + A
+	} else if x > 0 && y < 0 {
+		// Fourth quadrant
+		A = 360 - A
+	}
+	// Normalize the angle to be within [0, 360) if needed
+	if A < 0 {
+		A += 360
+	} else if A >= 360 {
+		A -= 360
+	}
+
+	return A
+}

@@ -405,3 +405,70 @@ func CalculateHeliographicCoordinates(day float64, month, year, UTHrs, UTMin int
 	}
 	return B, L
 }
+
+func CalculateCarringtonRotationNumbers(Gday float64, GMonth, GYear int) float64 {
+	julianDate := datetime.ConvertGreenwichDateToJulianDate(Gday, GMonth, GYear)
+	CRN := math.Trunc(1690 + ((julianDate - 2444235.34) / 27.2753))
+	return CRN
+}
+
+func CalculateSelenographicCoordinatesOfMoon(Gday float64, GMonth, GYear int, moonGeoLongDecimalDeg, moonGeoLatDecimalDeg, obliquity float64) (le float64, Be float64, C float64) {
+	julianDate := datetime.ConvertGreenwichDateToJulianDate(Gday, GMonth, GYear)
+	T := (julianDate - 2451545.0) / 36525.0
+	Ideg := macros.ConvertDegMinSecToDecimalDeg(1, 32, 32.7)
+	deltaOmegaDeg := 125.044522 - (1934.136261 * T)
+	for deltaOmegaDeg < 0 || deltaOmegaDeg > 360 {
+		if deltaOmegaDeg < 0 {
+			deltaOmegaDeg += 360
+		} else {
+			deltaOmegaDeg -= 360
+		}
+	}
+	FDeg := 93.271910 + (483202.0175 * T)
+	for FDeg < 0 || FDeg > 360 {
+		if FDeg < 0 {
+			FDeg += 360
+		} else {
+			FDeg -= 360
+		}
+	}
+	Be = macros.ConvertRadianceToDegree(math.Asin((-math.Cos(macros.ConvertDegreesToRadiance(Ideg)) * math.Sin(macros.ConvertDegreesToRadiance(moonGeoLatDecimalDeg))) +
+		(math.Sin(macros.ConvertDegreesToRadiance(Ideg)) * math.Cos(macros.ConvertDegreesToRadiance(moonGeoLatDecimalDeg)) * math.Sin(macros.ConvertDegreesToRadiance(deltaOmegaDeg-moonGeoLongDecimalDeg)))))
+
+	y := (-math.Sin(macros.ConvertDegreesToRadiance(moonGeoLatDecimalDeg))*math.Sin(macros.ConvertDegreesToRadiance(Ideg)) -
+		(math.Cos(macros.ConvertDegreesToRadiance(moonGeoLatDecimalDeg)) * math.Cos(macros.ConvertDegreesToRadiance(Ideg)) * math.Sin(macros.ConvertDegreesToRadiance(deltaOmegaDeg-moonGeoLongDecimalDeg))))
+
+	x := (math.Cos(macros.ConvertDegreesToRadiance(moonGeoLatDecimalDeg)) * math.Cos(macros.ConvertDegreesToRadiance(deltaOmegaDeg-moonGeoLongDecimalDeg)))
+
+	A := macros.AdjustAngleInQuadrant(x, y, macros.ConvertRadianceToDegree(math.Atan(y/x)))
+
+	le = A - FDeg
+
+	for le > 180 || le < -180 {
+		if le > 180 {
+			le -= 360
+		} else {
+			le += 360
+		}
+	}
+
+	C1 := macros.ConvertRadianceToDegree(math.Atan((math.Cos(macros.ConvertDegreesToRadiance(deltaOmegaDeg-moonGeoLongDecimalDeg)) * math.Sin(macros.ConvertDegreesToRadiance(Ideg))) / ((math.Cos(macros.ConvertDegreesToRadiance(moonGeoLatDecimalDeg)) * math.Cos(macros.ConvertDegreesToRadiance(Ideg))) + (math.Sin(macros.ConvertDegreesToRadiance(moonGeoLatDecimalDeg)) * math.Sin(macros.ConvertDegreesToRadiance(Ideg)) * math.Sin(macros.ConvertDegreesToRadiance(deltaOmegaDeg-moonGeoLongDecimalDeg))))))
+	C2 := macros.ConvertRadianceToDegree(math.Atan((math.Sin(macros.ConvertDegreesToRadiance(obliquity)) * math.Cos(macros.ConvertDegreesToRadiance(moonGeoLongDecimalDeg))) / ((math.Sin(macros.ConvertDegreesToRadiance(obliquity)) * math.Sin(macros.ConvertDegreesToRadiance(moonGeoLatDecimalDeg)) * math.Sin(macros.ConvertDegreesToRadiance(moonGeoLongDecimalDeg))) - (math.Cos(macros.ConvertDegreesToRadiance(obliquity)) * math.Cos(macros.ConvertDegreesToRadiance(moonGeoLatDecimalDeg))))))
+
+	return le, Be, (C1 + C2)
+}
+
+func CalculateSelenographicCoordinatesOfSun(Gday float64, GMonth, GYear int, UTHrs, UTMin, UTSec, moonGeoLongDecimalDeg, moonGeoLatDecimalDeg, obliquity, moonsHorizontalParallax, earthToSunDist, trueGeoLongSun float64) (float64, float64, float64) {
+	lambdaDash := trueGeoLongSun + 180 + macros.ConvertRadianceToDegree((macros.ConvertDegreesToRadiance(26.4)*math.Cos(macros.ConvertDegreesToRadiance(moonGeoLatDecimalDeg))*math.Sin(macros.ConvertDegreesToRadiance(trueGeoLongSun-moonGeoLongDecimalDeg)))/(moonsHorizontalParallax*earthToSunDist))
+	betaDash := (0.14666 * moonGeoLatDecimalDeg) / (moonsHorizontalParallax * earthToSunDist)
+	ls, bs, _ := CalculateSelenographicCoordinatesOfMoon(Gday, GMonth, GYear, lambdaDash, betaDash, obliquity)
+	colongitude := 90 - ls
+	for colongitude < 0 || colongitude > 360 {
+		if colongitude > 360 {
+			colongitude -= 360
+		} else {
+			colongitude += 360
+		}
+	}
+	return ls, bs, colongitude
+}
