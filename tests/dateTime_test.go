@@ -55,8 +55,7 @@ func TestConvertToJulianDate(t *testing.T) {
 func TestCalculateDayNumberSinceEpoch(t *testing.T) {
 	tests := []struct {
 		day           float64
-		month         float64
-		year          float64
+		month, year   int
 		expectedDayNo float64
 	}{
 		{27, 7, 2003, 207},

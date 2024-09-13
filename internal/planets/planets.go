@@ -109,10 +109,92 @@ func GetApproximatePositionOfPlanet(lctHour, lctMin, lctSec float64, isDaylightS
 	return planetRAHour, planetRAMin, planetRASec, planetDecDeg, planetDecMin, planetDecSec
 }
 
-func GetPrecisePositionOfPlanet(lct_hour, lct_min, lct_sec, is_daylight_saving, zone_correction_hours, local_date_day, local_date_month, local_date_year, planet_name float64) {
+// func GetPrecisePositionOfPlanet(lctHour, lctMin, lctSec float64, isDaylightSaving bool, zoneCorrectionHours, localDateDay, localDateMonth, localDateYear float64, planetName string) (planetRAHour, planetRAMin int, planetRASec float64, planetDecDeg, planetDecMin int, planetDecSec float64) {
+// 	/*
+// 		Calculate precise position of a planet.
 
+// 		Arguments:
+// 			lct_hour -- Local civil time, hour part.
+// 			lct_min -- Local civil time, minutes part.
+// 			lct_sec -- Local civil time, seconds part.
+// 			is_daylight_saving -- Is daylight savings in effect?
+// 			zone_correction_hours -- Time zone correction, in hours.
+// 			local_date_day -- Local date, day part.
+// 			local_date_month -- Local date, month part.
+// 			local_date_year -- Local date, year part.
+// 			planet_name -- Name of planet, e.g., "Jupiter"
+
+// 		Returns:
+// 			planet_ra_hour -- Right ascension of planet (hour part)
+// 			planet_ra_min -- Right ascension of planet (minutes part)
+// 			planet_ra_sec -- Right ascension of planet (seconds part)
+// 			planet_dec_deg -- Declination of planet (degrees part)
+// 			planet_dec_min -- Declination of planet (minutes part)
+// 			planet_dec_sec -- Declination of planet (seconds part)
+// 	*/
+// 	var daylightSaving float64
+// 	if isDaylightSaving {
+// 		daylightSaving = 1
+// 	}
+
+// 	// gdateDay := macros.ComputeGreenwichDayForLT(lctHour, lctMin, lctSec, daylightSaving, zoneCorrectionHours, localDateDay, localDateMonth, localDateYear)
+// 	// gdateMonth := macros.ComputeGreenwichMonthForLT(lctHour, lctMin, lctSec, daylightSaving, zoneCorrectionHours, localDateDay, localDateMonth, localDateYear)
+// 	// gdateYear := macros.ComputeGreenwichYearForLT(lctHour, lctMin, lctSec, daylightSaving, zoneCorrectionHours, localDateDay, localDateMonth, localDateYear)
+
+// 	// planetEclLong, planetEclLat, _, _, _, _, _ := macros.CalculatePlanetaryProperties(lctHour, lctMin, lctSec, daylightSaving, zoneCorrectionHours, localDateDay, localDateMonth, localDateYear, planetName)
+
+// 	raHours := macros.ConvertDecimalDegToHours(macros.CalculateEclipticRightAscension(planetEclLong, 0, 0, planetEclLat, 0, 0, localDateDay, localDateMonth, localDateYear))
+// 	decDeg := macros.CalculateEclipticDeclination(planetEclLong, 0, 0, planetEclLat, 0, 0, localDateDay, localDateMonth, localDateYear)
+
+// 	planetRAHour = macros.GetHourFromDecimalHour(raHours)
+// 	planetRAMin = macros.GetMinutesFromDecimalHours(raHours)
+// 	planetRASec = macros.GetSecondsFromDecimalHours(raHours)
+// 	planetDecDeg = macros.GetDegreeOfDecimalDeg(decDeg)
+// 	planetDecMin = macros.GetMinOfDecimalDeg(decDeg)
+// 	planetDecSec = macros.GetSecOfDecimalDeg(decDeg)
+
+// 	return planetRAHour, planetRAMin, planetRASec, planetDecDeg, planetDecMin, planetDecSec
+
+// }
+
+func GetPrecisePositionOfPlanet(lctHour, lctMin, lctSec float64, isDaylightSaving bool, zoneCorrectionHours, localDateDay, localDateMonth, localDateYear float64, planetName string) (planetRAHour, planetRAMin int, planetRASec float64, planetDecDeg, planetDecMin int, planetDecSec float64) {
+	
 }
 
-func GetVisualAspectsOfPlanet(lct_hour, lct_min, lct_sec, is_daylight_saving, zone_correction_hours, local_date_day, local_date_month, local_date_year, planet_name float64) {
+func GetVisualAspectsOfPlanet(lct_hour, lct_min, lct_sec float64, is_daylight_saving bool, zone_correction_hours, local_date_day, local_date_month, local_date_year, planet_name float64) {
+	/*
+		Calculate several visual aspects of a planet.
 
+		Arguments:
+			lct_hour -- Local civil time, hour part.
+			lct_min -- Local civil time, minutes part.
+			lct_sec -- Local civil time, seconds part.
+			is_daylight_saving -- Is daylight savings in effect?
+			zone_correction_hours -- Time zone correction, in hours.
+			local_date_day -- Local date, day part.
+			local_date_month -- Local date, month part.
+			local_date_year -- Local date, year part.
+			planet_name -- Name of planet, e.g., "Jupiter"
+
+		Returns:
+			distance_au -- Planet's distance from Earth, in AU.
+			ang_dia_arcsec -- Angular diameter of the planet.
+			phase -- Illuminated fraction of the planet.
+			light_time_hour -- Light travel time from planet to Earth, hour part.
+			light_time_minutes -- Light travel time from planet to Earth, minutes part.
+			light_time_seconds -- Light travel time from planet to Earth, seconds part.
+			pos_angle_bright_limb_deg -- Position-angle of the bright limb.
+			approximate_magnitude -- Apparent brightness of the planet.
+	*/
+
+	daylight_saving := 0
+
+	if is_daylight_saving {
+		daylight_saving = 1
+	}
+	greenwich_date_day := macros.ComputeGreenwichDayForLT(lct_hour, lct_min, lct_sec, daylight_saving, zone_correction_hours, local_date_day, local_date_month, local_date_year)
+	greenwich_date_month := macros.ComputeGreenwichMonthForLT(lct_hour, lct_min, lct_sec, daylight_saving, zone_correction_hours, local_date_day, local_date_month, local_date_year)
+	greenwich_date_year := macros.ComputeGreenwichYearForLT(lct_hour, lct_min, lct_sec, daylight_saving, zone_correction_hours, local_date_day, local_date_month, local_date_year)
+
+	planet_ecl_long_deg, planet_ecl_lat_deg, planet_dist_au, planet_h_long1, temp3, temp4, planet_r_vect := macros.CalculatePlanetaryProperties(lct_hour, lct_min, lct_sec, daylight_saving, zone_correction_hours, local_date_day, local_date_month, local_date_year, planet_name)
 }

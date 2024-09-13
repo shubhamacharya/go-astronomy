@@ -42,38 +42,32 @@ func CalculateDateOfEaster(year int) (day, month int) {
 	return day, month
 }
 
-func IsLeapYear(inputYear float64) bool {
+func IsLeapYear(inputYear int) bool {
 	// Check if the given year is a leap year based on the rules of the Gregorian calendar.
 	return (int(inputYear)%4 == 0 && int(inputYear)%100 != 0) || (int(inputYear)%400 == 0)
 }
 
-func CalculateDayNumber(day, month, year float64) float64 {
+func CalculateDayNumber(day float64, month, year int) float64 {
 	var dayNumber float64
 	isLeapYear := IsLeapYear(year)
-
-	// Days in each month for a non-leap year
-	daysInMonth := []float64{31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}
-
-	// If it's a leap year, adjust February's days
-	if isLeapYear {
-		daysInMonth[1] = 29
-	}
-
 	if month > 2 {
-		// For months after February, calculate day number based on the month and day
-		dayNumber = day
-		for i := 0; i < int(month)-1; i++ {
-			dayNumber += daysInMonth[i]
+		month++
+		dayNumber = math.Floor(float64(month) * 30.6)
+		if isLeapYear {
+			dayNumber -= 62
+		} else {
+			dayNumber -= 63
 		}
 	} else {
-		// For January and February, directly calculate the day number
-		dayNumber = day
-		for i := 0; i < int(month)-1; i++ {
-			dayNumber += daysInMonth[i]
+		month--
+		dayNumber = math.Floor(float64(month) * 63 * 0.5)
+		if isLeapYear {
+			dayNumber = math.Floor(float64(month) * 62 * 0.5)
 		}
 	}
 
-	return dayNumber - 1 // Subtract 1 to make the first day of the year as day 0
+	dayNumber += day
+	return dayNumber
 }
 
 func ConvertGreenwichDateToJulianDate(day float64, month, year int) float64 {
