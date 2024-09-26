@@ -41,10 +41,9 @@ func ConverHourAngleToRightAscension(localDay float64, localMonth int, localYear
 	return raHrs, raMin, raSec, decimalRightAscension
 }
 
-func ConvertEquatorialToHorizonCoordinates(raHours float64, raMinutes float64, raSeconds float64, decDegrees float64, decMinutes float64, decSeconds float64, latitude float64) (altitudeDeg float64, altitudeMin float64, altitudeSec float64, azimuthDeg float64, azimuthMin float64, azimuthSec float64) {
+func ConvertEquatorialToHorizonCoordinates(raHours, raMinutes int, raSeconds float64, decDegrees, decMinutes int, decSeconds, latitude float64) (altitudeDeg, altitudeMin int, altitudeSec float64, azimuthDeg, azimuthMin int, azimuthSec float64) {
 	// Convert Right Ascension (RA) to decimal hours
-	decimalRAHours := datetime.ConvertHrsMinSecToDecimalHrs(int(raHours), int(raMinutes), raSeconds, false, false)
-
+	decimalRAHours := datetime.ConvertHrsMinSecToDecimalHrs(raHours, raMinutes, raSeconds, false, false)
 	// Convert decimal Right Ascension hours to degrees
 	decimalRADegrees := ConvertDecimalHrsToDecimalDegress(decimalRAHours)
 
@@ -56,12 +55,12 @@ func ConvertEquatorialToHorizonCoordinates(raHours float64, raMinutes float64, r
 
 	// Calculate the altitude (altitude angle) in radians
 	sineAlt := math.Asin(
-		math.Sin(decimalDeclination*math.Pi/180.0)*math.Sin(latitudeRad) +
-			math.Cos(decimalDeclination*math.Pi/180.0)*math.Cos(latitudeRad)*math.Cos(decimalRADegrees*math.Pi/180.0),
+		math.Sin(decimalDeclination*(math.Pi/180.0))*math.Sin(latitudeRad) +
+			math.Cos(decimalDeclination*(math.Pi/180.0))*math.Cos(latitudeRad)*math.Cos(decimalRADegrees*(math.Pi/180.0)),
 	)
 
 	// Calculate the azimuth in radians
-	cosAz := (math.Sin(decimalDeclination*math.Pi/180.0) - math.Sin(latitudeRad)*math.Sin(sineAlt)) /
+	cosAz := (math.Sin(decimalDeclination*(math.Pi/180.0)) - math.Sin(latitudeRad)*math.Sin(sineAlt)) /
 		(math.Cos(latitudeRad) * math.Cos(sineAlt))
 	sineAz := math.Sin(decimalRADegrees * math.Pi / 180.0)
 	azimuthRad := math.Acos(cosAz)
@@ -72,17 +71,17 @@ func ConvertEquatorialToHorizonCoordinates(raHours float64, raMinutes float64, r
 	}
 
 	// Convert radians to degrees
-	altitudeDeg = sineAlt * 180.0 / math.Pi
-	azimuthDeg = azimuthRad * 180.0 / math.Pi
+	altitudeDegDec := sineAlt * (180.0 / math.Pi)
+	azimuthDegDec := azimuthRad * (180.0 / math.Pi)
 
 	// Convert decimal degrees to degrees, minutes, seconds
-	_, altitudeMin, altitudeSec = macros.ConvertDecimalDegToDegMinSec(altitudeDeg)
-	_, azimuthMin, azimuthSec = macros.ConvertDecimalDegToDegMinSec(azimuthDeg)
+	altitudeDeg, altitudeMin, altitudeSec = macros.ConvertDecimalDegToDegMinSec(altitudeDegDec)
+	azimuthDeg, azimuthMin, azimuthSec = macros.ConvertDecimalDegToDegMinSec(azimuthDegDec)
 
 	return altitudeDeg, altitudeMin, altitudeSec, azimuthDeg, azimuthMin, azimuthSec
 }
 
-func ConvertHorizonCoordinatesToEquatorial(GSTHrs, GSTMin, GSec, altitudeDeg, altitudeMin, altitudeSec, azimuthDeg, azimuthMin, azimuthSec, latitude float64) (haHrs, haMin int, haSec, decDeg, decMin, decSec float64) {
+func ConvertHorizonCoordinatesToEquatorial(GSTHrs, GSTMin int, GSec float64, altitudeDeg, altitudeMin int, altitudeSec float64, azimuthDeg, azimuthMin int, azimuthSec, latitude float64) (haHrs, haMin int, haSec float64, decDeg, decMin int, decSec float64) {
 	altitudeDecimalDeg := macros.ConvertDegMinSecToDecimalDeg(altitudeDeg, altitudeMin, altitudeSec)
 	azimuthDecimalDeg := macros.ConvertDegMinSecToDecimalDeg(azimuthDeg, azimuthMin, azimuthSec)
 
@@ -103,7 +102,7 @@ func ConvertHorizonCoordinatesToEquatorial(GSTHrs, GSTMin, GSec, altitudeDeg, al
 	return haHrs, haMin, haSec, decDeg, decMin, decSec
 }
 
-func ConvertEquatorialCoordinatesToEcliptic(Gday float64, GMonth, GYear, raHrs, raMin int, raSec, decDeg, decMin, decSec float64) (eclipticLongDeg, eclipticLongMin, eclipticLongSec, eclipticLatDeg, eclipticLatMin, eclipticLatSec float64) {
+func ConvertEquatorialCoordinatesToEcliptic(Gday float64, GMonth, GYear, raHrs, raMin int, raSec float64, decDeg, decMin int, decSec, epochDay float64, epochMonth, epochYear int) (eclipticLongDeg, eclipticLongMin int, eclipticLongSec float64, eclipticLatDeg, eclipticLatMin int, eclipticLatSec float64) {
 	raDecimalDeg := ConvertDecimalHrsToDecimalDegress(datetime.ConvertHrsMinSecToDecimalHrs(raHrs, raMin, raSec, false, false))
 	decDecimalDeg := macros.ConvertDegMinSecToDecimalDeg(decDeg, decMin, decSec)
 	_, _, _, meanObliquity := macros.CalculateEclipticMeanObliquity(Gday, GMonth, GYear)
@@ -122,7 +121,7 @@ func ConvertEquatorialCoordinatesToEcliptic(Gday float64, GMonth, GYear, raHrs, 
 	return latDeg, latMin, latSec, longDeg, longMin, longSec
 }
 
-func ConvertEquatorialCoordinateToGalactic(raHrs, raMin int, raSec, decDeg, decMin, decSec float64) (float64, float64, float64, float64, float64, float64) {
+func ConvertEquatorialCoordinateToGalactic(raHrs, raMin int, raSec float64, decDeg, decMin int, decSec float64) (lDeg, lMin int, lSec float64, bDeg, bMin int, bSec float64) {
 	raDecimalDeg := ConvertDecimalHrsToDecimalDegress(datetime.ConvertHrsMinSecToDecimalHrs(raHrs, raMin, raSec, false, false))
 	decDecimalDeg := macros.ConvertDegMinSecToDecimalDeg(decDeg, decMin, decSec)
 
@@ -132,13 +131,13 @@ func ConvertEquatorialCoordinateToGalactic(raHrs, raMin int, raSec, decDeg, decM
 	x := math.Cos(macros.ConvertDegreesToRadiance(decDecimalDeg)) * math.Sin(macros.ConvertDegreesToRadiance(raDecimalDeg)-macros.ConvertDegreesToRadiance(192.25)) * math.Cos(macros.ConvertDegreesToRadiance(27.4))
 	l := macros.AdjustAngleRange(macros.ConvertRadianceToDegree(math.Atan2(y, x))+33.0, 0, 360)
 
-	lDeg, lMin, lSec := macros.ConvertDecimalDegToDegMinSec(l)
-	bDeg, bMin, bSec := macros.ConvertDecimalDegToDegMinSec(b)
+	lDeg, lMin, lSec = macros.ConvertDecimalDegToDegMinSec(l)
+	bDeg, bMin, bSec = macros.ConvertDecimalDegToDegMinSec(b)
 
 	return lDeg, lMin, lSec, bDeg, bMin, bSec
 }
 
-func ConvertGalacticCoordinateToEquatorial(lHrs, lMin, lSec, bDeg, bMin, bSec float64) (raHrs, raMin int, raSec, decDeg, decMin, decSec float64) {
+func ConvertGalacticCoordinateToEquatorial(lHrs, lMin int, lSec float64, bDeg, bMin int, bSec float64) (raHrs, raMin int, raSec float64, decDeg, decMin int, decSec float64) {
 	lDecimalDeg := macros.ConvertDegMinSecToDecimalDeg(lHrs, lMin, lSec)
 	bDecimalDeg := macros.ConvertDegMinSecToDecimalDeg(bDeg, bMin, bSec)
 	decDecimalDeg := macros.ConvertRadianceToDegree(math.Asin((math.Cos(macros.ConvertDegreesToRadiance(bDecimalDeg)) * math.Cos(macros.ConvertDegreesToRadiance(27.4)) * math.Sin(macros.ConvertDegreesToRadiance(lDecimalDeg)-macros.ConvertDegreesToRadiance(33.0))) + (math.Sin(macros.ConvertDegreesToRadiance(bDecimalDeg)) * math.Sin(macros.ConvertDegreesToRadiance(27.4)))))
@@ -153,7 +152,7 @@ func ConvertGalacticCoordinateToEquatorial(lHrs, lMin, lSec, bDeg, bMin, bSec fl
 	return raHrs, raMin, raSec, decDeg, decMin, decSec
 }
 
-func CalculateAngleBetweenTwoCelestialObjects(p1RAHrs, p1RAMin int, p1RASec, p1DecDeg, p1DecMin, p1DecSec float64, p2RAHrs, p2RAMin int, p2RASec, p2DecDeg, p2DecMin, p2DecSec float64) (float64, float64, float64) {
+func CalculateAngleBetweenTwoCelestialObjects(p1RAHrs, p1RAMin int, p1RASec float64, p1DecDeg, p1DecMin int, p1DecSec float64, p2RAHrs, p2RAMin int, p2RASec float64, p2DecDeg, p2DecMin int, p2DecSec float64) (angleDeg, angleMin int, angleSec float64) {
 	p1RADecimalHrs := datetime.ConvertHrsMinSecToDecimalHrs(p1RAHrs, p1RAMin, p1RASec, false, false)
 	p1DecDecimalDeg := macros.ConvertDegMinSecToDecimalDeg(p1DecDeg, p1DecMin, p1DecSec)
 	p2RADecimalHrs := datetime.ConvertHrsMinSecToDecimalHrs(p2RAHrs, p2RAMin, p2RASec, false, false)
@@ -162,11 +161,11 @@ func CalculateAngleBetweenTwoCelestialObjects(p1RAHrs, p1RAMin int, p1RASec, p1D
 	RADiffInDegress := ConvertDecimalHrsToDecimalDegress(p1RADecimalHrs - p2RADecimalHrs)
 
 	angle := macros.ConvertRadianceToDegree(math.Acos((math.Sin(macros.ConvertDegreesToRadiance(p1DecDecimalDeg)) * math.Sin(macros.ConvertDegreesToRadiance(p2DecDecimalDeg))) + (math.Cos(macros.ConvertDegreesToRadiance(p1DecDecimalDeg)) * math.Cos(macros.ConvertDegreesToRadiance(p2DecDecimalDeg)) * math.Cos(macros.ConvertDegreesToRadiance(RADiffInDegress)))))
-	angleDeg, angleMin, angleSec := macros.ConvertDecimalDegToDegMinSec(angle)
+	angleDeg, angleMin, angleSec = macros.ConvertDecimalDegToDegMinSec(angle)
 	return angleDeg, angleMin, angleSec
 }
 
-func CalculateRisingAndSettingTime(Gday float64, Gmonth, Gyear, raHrs, raMin int, raSec, decDeg, decMin, decSec, geoLatN, geoLongE, refractionInArcMin float64) (UTrHrs, UTrMin int, UTrSec float64, UTsHrs, UTsMin int, UTsSec float64) {
+func CalculateRisingAndSettingTime(Gday float64, Gmonth, Gyear, raHrs, raMin int, raSec float64, decDeg, decMin int, decSec, geoLatN, geoLongW, refractionInArcMin float64) (UTrHrs, UTrMin int, UTrSec float64, UTsHrs, UTsMin int, UTsSec, azimuthRise, azimuthSet float64) {
 	decimalRAHrs := datetime.ConvertHrsMinSecToDecimalHrs(int(raHrs), int(raMin), raSec, false, false)
 	decimalDECDeg := macros.ConvertDegMinSecToDecimalDeg(decDeg, decMin, decSec)
 	refractionDeg := refractionInArcMin / 60 // Converted refraction from arcmin to degress
@@ -176,15 +175,17 @@ func CalculateRisingAndSettingTime(Gday float64, Gmonth, Gyear, raHrs, raMin int
 	if cosH > -1 && cosH < +1 {
 		H = macros.ConvertDecimalDegressToDecimalHrs(macros.ConvertRadianceToDegree(math.Acos(cosH)))
 	}
+	decimalDECRad := macros.ConvertDegreesToRadiance(decimalDECDeg)
+	refractionRad := macros.ConvertDegreesToRadiance(refractionDeg)
+	geoLatNRad := macros.ConvertDegreesToRadiance(geoLatN)
 
 	LSTr := macros.AdjustAngleRange(decimalRAHrs-H, 0, 24)
 	LSTs := macros.AdjustAngleRange(decimalRAHrs+H, 0, 24)
-	// Ar := macros.ConvertRadianceToDegree(math.Acos((math.Sin(macros.ConvertDegreesToRadiance(decimalDECDeg)) + (math.Sin(macros.ConvertDegreesToRadiance(refractionDeg)) * math.Sin(macros.ConvertDegreesToRadiance(geoLatN)))) / (math.Cos(macros.ConvertDegreesToRadiance(refractionDeg)) * math.Cos(macros.ConvertDegreesToRadiance(geoLatN)))))
-	// Ar = macros.AdjustAngleRange(Ar, 0, 360)
+	a := (math.Sin(decimalDECRad) + (math.Sin(refractionRad) * math.Sin(geoLatNRad)))
+	azimuthRise = macros.ConvertRadianceToDegree(math.Acos(a / (math.Cos(refractionRad) * math.Cos(geoLatNRad))))
+	azimuthRise = macros.AdjustAngleRange(azimuthRise, 0, 360)
 
-	// As := 360 - Ar
-	// Convert E longitude to west
-	geoLongW := -(360 - geoLongE)
+	azimuthSet = 360 - azimuthRise
 	rHrs, rMin, rSec := datetime.ConvertDecimalHrsToHrsMinSec(LSTr)
 	sHrs, sMin, sSec := datetime.ConvertDecimalHrsToHrsMinSec(LSTs)
 	GSTrHrs, GSTrMin, GSTrSec, _ := datetime.CalculateGreenwichSiderealTimeUsingLocalSiderealTime(rHrs, rMin, rSec, geoLongW)
@@ -192,10 +193,10 @@ func CalculateRisingAndSettingTime(Gday float64, Gmonth, Gyear, raHrs, raMin int
 	UTrHrs, UTrMin, UTrSec = datetime.ConvertGreenwichSiderealTimeToUniversalTime(Gday, Gmonth, Gyear, GSTrHrs, GSTrMin, GSTrSec)
 	UTsHrs, UTsMin, UTsSec = datetime.ConvertGreenwichSiderealTimeToUniversalTime(Gday, Gmonth, Gyear, GSTsHrs, GSTsMin, GSTsSec)
 
-	return UTrHrs, UTrMin, UTrSec, UTsHrs, UTsMin, UTsSec
+	return UTrHrs, UTrMin, UTrSec, UTsHrs, UTsMin, UTsSec, azimuthRise, azimuthSet
 }
 
-func CalculatePrecession(n1, n2 float64, alphaHrs, alphaMin int, alphaSec, deltaDeg, deltaMin, deltaSec float64) (alpha1Hrs, alpha1Min int, alpha1Sec, delta1Deg, delta1Min, delta1Sec float64) {
+func CalculatePrecession(n1, n2 float64, alphaHrs, alphaMin int, alphaSec float64, deltaDeg, deltaMin int, deltaSec float64) (alpha1Hrs, alpha1Min int, alpha1Sec float64, delta1Deg, delta1Min int, delta1Sec float64) {
 	decimalHrs := datetime.ConvertHrsMinSecToDecimalHrs(alphaHrs, alphaMin, alphaSec, false, false)
 	decimalHrsTodeg := ConvertDecimalHrsToDecimalDegress(decimalHrs)
 	decimalDeg := macros.ConvertDegMinSecToDecimalDeg(deltaDeg, deltaMin, deltaSec)
@@ -225,7 +226,7 @@ func CalculateNutation(day float64, month, year int) (float64, float64) {
 	return nutationInLong, nutationInObliquity
 }
 
-func CalculateAberration(day float64, month, year int, trueLambdaDeg, trueLambdaMin, trueLambdaSec, trueBetaDeg, trueBetaMin, trueBetaSec, longDeg, longMin, longSec float64) (float64, float64, float64, float64, float64, float64) {
+func CalculateAberration(day float64, month, year, trueLambdaDeg, trueLambdaMin int, trueLambdaSec float64, trueBetaDeg, trueBetaMin int, trueBetaSec float64, longDeg, longMin int, longSec float64) (correctedLambdaDeg, correctedLambdaMin int, correctedLambdaSec float64, correctedBetaDeg, correctedBetaMin int, correctedBetaSec float64) {
 	trueLambdaDecimalDeg := macros.ConvertDegMinSecToDecimalDeg(trueLambdaDeg, trueLambdaMin, trueLambdaSec)
 	trueBetaDecimalDeg := macros.ConvertDegMinSecToDecimalDeg(trueBetaDeg, trueBetaMin, trueBetaSec)
 	longDecimalDeg := macros.ConvertDegMinSecToDecimalDeg(longDeg, longMin, longSec)
@@ -233,15 +234,15 @@ func CalculateAberration(day float64, month, year int, trueLambdaDeg, trueLambda
 	trueLambdaDecimalDeg += (-20.5 * math.Cos(macros.ConvertDegreesToRadiance(longDecimalDeg-trueLambdaDecimalDeg)) / math.Cos(macros.ConvertDegreesToRadiance(trueBetaDecimalDeg))) / 3600
 	trueBetaDecimalDeg += (-20.5 * math.Sin(macros.ConvertDegreesToRadiance(longDecimalDeg-trueLambdaDecimalDeg)) * math.Sin(macros.ConvertDegreesToRadiance(trueBetaDecimalDeg))) / 3600
 
-	correctedLambdaDeg, correctedLambdaMin, correctedLambdaSec := macros.ConvertDecimalDegToDegMinSec(trueLambdaDecimalDeg)
-	correctedBetaDeg, correctedBetaMin, correctedBetaSec := macros.ConvertDecimalDegToDegMinSec(trueBetaDecimalDeg)
+	correctedLambdaDeg, correctedLambdaMin, correctedLambdaSec = macros.ConvertDecimalDegToDegMinSec(trueLambdaDecimalDeg)
+	correctedBetaDeg, correctedBetaMin, correctedBetaSec = macros.ConvertDecimalDegToDegMinSec(trueBetaDecimalDeg)
 
-	return correctedLambdaDeg, correctedLambdaMin, correctedLambdaSec, correctedBetaDeg, math.Abs(correctedBetaMin), math.Abs(correctedBetaSec)
+	return correctedLambdaDeg, correctedLambdaMin, correctedLambdaSec, correctedBetaDeg, correctedBetaMin, math.Abs(correctedBetaSec)
 }
 
-func CalculateRefraction(trueHAHr, trueHAMin, trueHASec, trueDecDeg, trueDecMin, trueDecSec, geoLat, temp, pressure float64) (HaHrs, HaMin int, HaSec, DecDeg, DecMin, DecSec float64) {
+func CalculateRefraction(trueHAHr, trueHAMin int, trueHASec float64, trueDecDeg, trueDecMin int, trueDecSec float64, geoLat, temp, pressure float64) (HaHrs, HaMin int, HaSec float64, DecDeg, DecMin int, DecSec float64) {
 	altitudeDeg, altitudeMin, altitudeSec, azimuthDeg, azimuthMin, azimuthSec := ConvertEquatorialToHorizonCoordinates(trueHAHr, trueHAMin, trueHASec, trueDecDeg, trueDecMin, trueDecSec, geoLat)
-	altitudeDecimalDeg := macros.ConvertDegMinSecToDecimalDeg(math.Round(altitudeDeg), altitudeMin, altitudeSec)
+	altitudeDecimalDeg := macros.ConvertDegMinSecToDecimalDeg(altitudeDeg, altitudeMin, altitudeSec)
 	R := 0.0
 	z := 90 - altitudeDecimalDeg
 	if altitudeDecimalDeg > 15.0 {
@@ -264,7 +265,7 @@ func CalculateGeocentricParallax(heightFromSeaLevel, longW, latN float64) (float
 }
 
 func CalculateParallaxCorrections(day float64, month, year, UTHrs, UTMin int, UTSec, heighSeaLevel, longW, latN float64,
-	geoRAHrs, geoRAMin int, geoRASec, geoDecDeg, geoDecMin, geoDecSec, parallaxDeg, parallaxMin, parallaxSec, distanceAU float64) (appreantRAHrs, appreantRAMin int, appreantRASec float64, appreantDecDeg, appreantDecMin, appreantDecSec float64) {
+	geoRAHrs, geoRAMin int, geoRASec float64, geoDecDeg, geoDecMin int, geoDecSec float64, parallaxDeg, parallaxMin int, parallaxSec, distanceAU float64) (appreantRAHrs, appreantRAMin int, appreantRASec float64, appreantDecDeg, appreantDecMin int, appreantDecSec float64) {
 
 	localDay, localMonth, localYear, localHrs, localMin, localSec := datetime.ConvertUniversalTimeToLocalTime(day, month, year, UTHrs, UTMin, UTSec, 0, 0, 0.0)
 
@@ -304,13 +305,14 @@ func CalculateParallaxCorrections(day float64, month, year, UTHrs, UTMin int, UT
 	return appreantRAHrs, appreantRAMin, appreantRASec, appreantDecDeg, appreantDecMin, appreantDecSec
 }
 
-func CalculateHeliographicCoordinates(day float64, month, year, UTHrs, UTMin int, UTSec, geoLongDeg, geoLongMin, geoLongSec, positionAngleTheta, displacementP1, angularRadiusSDeg, angularRadiusSMin, angularRadiusSSec float64) (float64, float64) {
+func CalculateHeliographicCoordinates(day float64, month, year, UTHrs, UTMin int, UTSec float64, geoLongDeg, geoLongMin int, geoLongSec, positionAngleTheta, displacementP1 float64, angularRadiusSDeg, angularRadiusSMin int, angularRadiusSSec float64, epochDay float64, epochMonth, epochYear int) (float64, float64) {
 	julianDate := datetime.ConvertGreenwichDateToJulianDate(day, month, year)
+	epochDate := datetime.ConvertGreenwichDateToJulianDate(epochDay, epochMonth, epochYear)
 	Ideg := 7.25
-	T := (julianDate - 2415020.0) / 36525.0
+	T := (julianDate - epochDate) / 36525.0
 	deltaDeg := (84 * T) / 60
 	gamma := macros.ConvertDegMinSecToDecimalDeg(74, 22, 0) + deltaDeg
-	lambda := macros.CalculatePositionOfSunHelper(day, month, year, UTHrs, UTMin, UTSec)
+	lambda := macros.CalculatePositionOfSunHelper(day, month, year, UTHrs, UTMin, UTSec, epochDay, epochMonth, epochYear)
 	y := math.Sin(macros.ConvertDegreesToRadiance(gamma-lambda)) * math.Cos(macros.ConvertDegreesToRadiance(Ideg))
 	x := -math.Cos(math.Sin(macros.ConvertDegreesToRadiance(gamma - lambda)))
 	AInv := macros.ConvertRadianceToDegree(math.Atan2(y, x))

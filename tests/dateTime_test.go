@@ -52,15 +52,15 @@ func TestConvertToJulianDate(t *testing.T) {
 }
 
 // TestCalculateDayNumberSinceEpoch tests the calculation of day number since epoch for various dates.
-func TestCalculateDayNumberSinceEpoch(t *testing.T) {
+func TestCalculateDayNumberSinceYearStart(t *testing.T) {
 	tests := []struct {
 		day           float64
 		month, year   int
 		expectedDayNo float64
 	}{
-		{27, 7, 2003, 207},
-		{1, 1, 2000, 0},     // Start of epoch year
-		{31, 12, 1999, 364}, // End of year before epoch
+		{24, 9, 2024, 268},
+		{1, 1, 2024, 1},     // Start of epoch year
+		{31, 12, 2024, 366}, // End of year before epoch
 	}
 
 	for _, test := range tests {

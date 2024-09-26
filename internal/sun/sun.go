@@ -1,7 +1,6 @@
 package sun
 
 import (
-	"fmt"
 	"go-astronomy/internal/coords"
 	datetime "go-astronomy/internal/dateTime"
 	"go-astronomy/internal/macros"
@@ -12,16 +11,16 @@ import (
 const semiMajorAxis = 1.495985e8
 const angularDiameter = 0.533128
 
-func CalculatePositionOfSun(GDay float64, GMonth, GYear int, UTHrs, UTMins int, UTSec float64) (raHrs, raMin int, raSec, decDeg, decMin, decSec, lambda float64) {
+func CalculatePositionOfSun(GDay float64, GMonth, GYear int, UTHrs, UTMins int, UTSec float64, epochDay float64, epochMonth, epochYear int) (raHrs, raMin int, raSec float64, decDeg, decMin int, decSec, lambda float64) {
 
-	lambda = macros.CalculatePositionOfSunHelper(GDay, GMonth, GYear, UTHrs, UTMins, UTSec)
+	lambda = macros.CalculatePositionOfSunHelper(GDay, GMonth, GYear, UTHrs, UTMins, UTSec, epochDay, epochMonth, epochYear)
 	lambdaDeg, lambdaMin, lambdaSec := macros.ConvertDecimalDegToDegMinSec(lambda)
-	raHrs, raMin, raSec, decDeg, decMin, decSec = macros.ConvertEclipticCoordinatesToEquatorial(GDay, GMonth, GYear, lambdaDeg, lambdaMin, lambdaSec, 0, 0, 0)
-	fmt.Printf("\nra : %d %d %f\ndec : %f %f %f\n", raHrs, raMin, raSec, decDeg, decMin, decSec)
+	raHrs, raMin, raSec, decDeg, decMin, decSec = macros.ConvertEclipticCoordinatesToEquatorial(GDay, GMonth, GYear, lambdaDeg, lambdaMin, lambdaSec, 0, 0, 0, epochDay, epochMonth, epochYear)
+	// fmt.Printf("\nlambda : %d %d %f\nra : %d %d %f\ndec : %d %d %f\n", lambdaDeg, lambdaMin, lambdaSec, raHrs, raMin, raSec, decDeg, decMin, decSec)
 	return raHrs, raMin, raSec, decDeg, decMin, decSec, lambda
 }
 
-func CalculatePrecisePositionOfSun(GDay float64, GMonth, GYear int, UTHrs, UTMins int, UTSec float64) (raHrs, raMins int, raSecs, decDeg, decMin, decSec, lambda0 float64) {
+func CalculatePrecisePositionOfSun(GDay float64, GMonth, GYear int, UTHrs, UTMins int, UTSec float64, epochDay float64, epochMonth, epochYear int) (raHrs, raMins int, raSecs float64, decDeg, decMin int, decSec, lambda0 float64) {
 	Eg, Wg, e := macros.CalculateEgWgAnde(GDay, GMonth, GYear, UTHrs, UTMins, UTSec)
 	MRad := macros.ConvertDegreesToRadiance(macros.AdjustAngleRange(Eg-Wg, 0, 360))
 	eccentricAnomaly := macros.ConvertRadianceToDegree(macros.CalculateEccentricAnomaly(MRad, e))
@@ -35,14 +34,14 @@ func CalculatePrecisePositionOfSun(GDay float64, GMonth, GYear int, UTHrs, UTMin
 		lambda0 -= 360
 	}
 	lambda0Deg, lambda0Min, lambda0Sec := macros.ConvertDecimalDegToDegMinSec(lambda0)
-	raHrs, raMins, raSecs, decDeg, decMin, decSec = macros.ConvertEclipticCoordinatesToEquatorial(GDay, GMonth, GYear, lambda0Deg, lambda0Min, lambda0Sec, 0, 0, 0)
+	raHrs, raMins, raSecs, decDeg, decMin, decSec = macros.ConvertEclipticCoordinatesToEquatorial(GDay, GMonth, GYear, lambda0Deg, lambda0Min, lambda0Sec, 0, 0, 0, epochDay, epochMonth, epochYear)
 
 	return raHrs, raMins, raSecs, decDeg, decMin, decSec, lambda0
 }
 
-func CalculateSunsDistanceAndAngularSize(GDay float64, GMonth, GYear int, UTHrs, UTMins int, UTSec float64) (r, thetaDeg, thetaMin, thetaSec, theta float64) {
+func CalculateSunsDistanceAndAngularSize(GDay float64, GMonth, GYear int, UTHrs, UTMins int, UTSec float64, epochDay float64, epochMonth, epochYear int) (r float64, thetaDeg int, thetaMin int, thetaSec, theta float64) {
 	_, Wg, e := macros.CalculateEgWgAnde(GDay, GMonth, GYear, UTHrs, UTMins, UTSec)
-	_, _, _, _, _, _, lambda0 := CalculatePrecisePositionOfSun(GDay, GMonth, GYear, UTHrs, UTMins, UTSec)
+	_, _, _, _, _, _, lambda0 := CalculatePrecisePositionOfSun(GDay, GMonth, GYear, UTHrs, UTMins, UTSec, epochDay, epochMonth, epochYear)
 	V := lambda0 - Wg
 	if V < 0 {
 		V += 360
@@ -54,14 +53,12 @@ func CalculateSunsDistanceAndAngularSize(GDay float64, GMonth, GYear int, UTHrs,
 	return r, thetaDeg, thetaMin, thetaSec, theta
 }
 
-func CalculateSunsRiseAndSet(GDay float64, GMonth, GYear int, UTHrs, UTMins int, UTSec, geoLongW, geoLatN, refractionInArcMin, daylightsavingHrs, daylightsavingMin, timeZone float64) (riseHrs, riseMin int, riseSec float64, SetHrs, SetMin int, SetSec float64) {
-	raHrs, raMins, raSecs, decDeg, decMin, decSec, _ := CalculatePositionOfSun(GDay, GMonth, GYear, UTHrs, UTMins, UTSec)
-	geoLongE := 360 - geoLongW
-	fmt.Printf("\nra : %d %d %f\ndec : %f %f %f\n", raHrs, raMins, raSecs, decDeg, decMin, decSec)
-	UTrHrs, UTrMin, UTrSec, UTsHrs, UTsMin, UTsSec := coords.CalculateRisingAndSettingTime(GDay, GMonth, GYear, int(raHrs), int(raMins), raSecs, decDeg, decMin, decSec, geoLatN, geoLongE, refractionInArcMin)
+func CalculateSunsRiseAndSet(GDay float64, GMonth, GYear int, UTHrs, UTMins int, UTSec, geoLongW, geoLatN, refractionInArcMin, daylightsavingHrs, daylightsavingMin, timeZone float64, epochDay float64, epochMonth, epochYear int) (riseHrs, riseMin int, riseSec float64, SetHrs, SetMin int, SetSec float64) {
+	raHrs, raMins, raSecs, decDeg, decMin, decSec, _ := CalculatePositionOfSun(GDay, GMonth, GYear, UTHrs, UTMins, UTSec, epochDay, epochMonth, epochYear)
+	// fmt.Printf("\nra : %f\ndec :  %f\n", datetime.ConvertHrsMinSecToDecimalHrs(raHrs, raMins, raSecs, false, false), macros.ConvertDegMinSecToDecimalDeg(decDeg, decMin, decSec))
+	UTrHrs, UTrMin, UTrSec, UTsHrs, UTsMin, UTsSec, _, _ := coords.CalculateRisingAndSettingTime(GDay, GMonth, GYear, int(raHrs), int(raMins), raSecs, decDeg, decMin, decSec, geoLatN, geoLongW, refractionInArcMin)
 	_, _, _, riseHrs, riseMin, riseSec = datetime.ConvertUniversalTimeToLocalTime(GDay, int(GMonth), int(GYear), int(UTrHrs), int(UTrMin), UTrSec, int(daylightsavingHrs), int(daylightsavingMin), timeZone)
 	_, _, _, SetHrs, SetMin, SetSec = datetime.ConvertUniversalTimeToLocalTime(GDay, int(GMonth), int(GYear), int(UTsHrs), int(UTsMin), UTsSec, int(daylightsavingHrs), int(daylightsavingMin), timeZone)
-	fmt.Printf("\nraDecimal : %f\ndecDeg : %f\n", datetime.ConvertHrsMinSecToDecimalHrs(int(raHrs), int(raMins), raSecs, false, false), macros.ConvertDegMinSecToDecimalDeg(decDeg, decMin, decSec))
+	// fmt.Printf("\nriseHrs : %d\nriseMin : %d\nriseSec : %f\nSetHrs : %d\nsetMin : %d\nsetSec : %f\n", riseHrs, riseMin, riseSec, SetHrs, SetMin, SetSec)
 	return riseHrs, riseMin, riseSec, SetHrs, SetMin, SetSec
 }
-
