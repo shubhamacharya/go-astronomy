@@ -60,15 +60,34 @@ func TestCalculateSunsRiseAndSet(t *testing.T) {
 	riseHrs, riseMin, riseSec, SetHrs, SetMin, SetSec := sun.CalculateSunsRiseAndSet(10.0, 3, 1986, 0, 0, 0.0, -71.05, 42.37, 34.0, 0, 0, -5.0, 1.5, 1, 2010)
 	const tolerance = 0.01 // Define an acceptable error range
 
-	if math.Abs(float64(riseHrs)-6.0) > tolerance || math.Abs(float64(riseMin)-5.0) > tolerance || math.Abs(riseSec-30.468938) > tolerance &&
-		math.Abs(float64(SetHrs)-17.0) > tolerance || math.Abs(float64(SetMin)-38.0) > tolerance || math.Abs(SetSec-13.791434) > tolerance {
-		t.Fatalf(`Error while Calculating Suns Rise And Set. Required:  %d %d %f    %d %d %f   Got: %d %d %f    %d %d %f`, 6, 5, 30.468938, 17, 38, 13.791434, riseHrs, riseMin, riseSec, SetHrs, SetMin, SetSec)
+	if math.Abs(float64(riseHrs)-6.0) > tolerance || math.Abs(float64(riseMin)-5.0) > tolerance || math.Abs(riseSec-32.468858) > tolerance &&
+		math.Abs(float64(SetHrs)-17.0) > tolerance || math.Abs(float64(SetMin)-38.0) > tolerance || math.Abs(SetSec-15.791354) > tolerance {
+		t.Fatalf(`Error while Calculating Suns Rise And Set. Required:  %d %d %f    %d %d %f   Got: %d %d %f    %d %d %f`, 6, 5, 32.468858, 17, 38, 15.791354, riseHrs, riseMin, riseSec, SetHrs, SetMin, SetSec)
 	}
 
-	// riseHrs, riseMin, riseSec, SetHrs, SetMin, SetSec := sun.CalculateSunsRiseAndSet(25.0, 9, 2024, 12, 0, 0.0, 17.4065, 78.4772, 34.0, 0, 0, 5.5, 1.5, 1, 2010)
+	riseHrs, riseMin, riseSec, SetHrs, SetMin, SetSec = sun.CalculateSunsRiseAndSet(25.0, 9, 2024, 0, 0, 0.0, 73.8567, 18.5204, 34.0, 0, 0, 5.5, 1.5, 1, 2010)
 
-	// if math.Abs(float64(riseHrs)-8.0) > tolerance || math.Abs(float64(riseMin)-26.0) > tolerance || math.Abs(riseSec-3.61) > tolerance &&
-	// 	math.Abs(float64(SetHrs)-19.0) > tolerance || math.Abs(float64(SetMin)-12.0) > tolerance || math.Abs(SetSec-43.18) > tolerance {
-	// 	t.Fatalf(`Error while Calculating Suns Rise And Set. Required:  %d %d %f    %d %d %f   Got: %d %d %f    %d %d %f`, 8, 26, 3.61, 19, 12, 43.18, riseHrs, riseMin, riseSec, SetHrs, SetMin, SetSec)
-	// }
+	if math.Abs(float64(riseHrs)-6.0) > tolerance || math.Abs(float64(riseMin)-21.0) > tolerance || math.Abs(riseSec-14.791327) > tolerance &&
+		math.Abs(float64(SetHrs)-18.0) > tolerance || math.Abs(float64(SetMin)-26.0) > tolerance || math.Abs(SetSec-12.945211) > tolerance {
+		t.Fatalf(`Error while Calculating Suns Rise And Set. Required:  %d %d %f    %d %d %f   Got: %d %d %f    %d %d %f`, 6, 21, 14.791327, 19, 12, 12.945211, riseHrs, riseMin, riseSec, SetHrs, SetMin, SetSec)
+	}
+}
+
+func TestCalculateCalculateSunTwilight(t *testing.T) {
+	riseTwilightHrs, riseTwilightMin, riseTwilightSec, setTwilightHrs, setTwilightMin, setTwilightSec := sun.CalculateCalculateSunTwilight(7.0, 9, 1979, 0, 0, 0.0, 0, 52.0, 34.0, 0, 0, 0.0, 1.5, 1, 2010)
+	const tolerance = 0.01 // Define an acceptable error range
+
+	if math.Abs(float64(riseTwilightHrs)-3.0) > tolerance || math.Abs(float64(riseTwilightMin)-12.0) > tolerance || math.Abs(riseTwilightSec-30.136076) > tolerance &&
+		math.Abs(float64(setTwilightHrs)-20.0) > tolerance || math.Abs(float64(setTwilightMin)-39.0) > tolerance || math.Abs(setTwilightSec-79.362118) > tolerance {
+		t.Fatalf(`Error while Calculating Suns Twilight. Required:  %d %d %f    %d %d %f   Got: %d %d %f    %d %d %f`, 3, 12, 30.136076, 20, 39, 79.362118, riseTwilightHrs, riseTwilightMin, riseTwilightSec, setTwilightHrs, setTwilightMin, setTwilightSec)
+	}
+}
+
+func TestCalculateTheEquationOfTime(t *testing.T) {
+	eqHrs, eqMin, eqSec := sun.CalculateTheEquationOfTime(27.0, 7, 2010, 0, 0, 0.0, 0, 52.0, 34.0, 0, 0, 0.0, 1.5, 1, 2010)
+	const tolerance = 0.01 // Define an acceptable error range
+
+	if math.Abs(float64(eqHrs)-0.0) > tolerance || math.Abs(float64(eqMin)-4.0) > tolerance || math.Abs(eqSec-30.541071) > tolerance {
+		t.Fatalf(`Error while Calculating Suns Twilight. Required:  %d %d %f  Got: %d %d %f`, 0, 4, 30.541071, eqHrs, eqMin, eqSec)
+	}
 }

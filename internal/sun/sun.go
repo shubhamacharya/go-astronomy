@@ -54,11 +54,32 @@ func CalculateSunsDistanceAndAngularSize(GDay float64, GMonth, GYear int, UTHrs,
 }
 
 func CalculateSunsRiseAndSet(GDay float64, GMonth, GYear int, UTHrs, UTMins int, UTSec, geoLongW, geoLatN, refractionInArcMin, daylightsavingHrs, daylightsavingMin, timeZone float64, epochDay float64, epochMonth, epochYear int) (riseHrs, riseMin int, riseSec float64, SetHrs, SetMin int, SetSec float64) {
+	const verticalShiftOfUpperLimb float64 = 0.008333
 	raHrs, raMins, raSecs, decDeg, decMin, decSec, _ := CalculatePositionOfSun(GDay, GMonth, GYear, UTHrs, UTMins, UTSec, epochDay, epochMonth, epochYear)
 	// fmt.Printf("\nra : %f\ndec :  %f\n", datetime.ConvertHrsMinSecToDecimalHrs(raHrs, raMins, raSecs, false, false), macros.ConvertDegMinSecToDecimalDeg(decDeg, decMin, decSec))
+	verticalShiftHrs, verticalShiftMin, verticalShiftSec := datetime.ConvertDecimalHrsToHrsMinSec(macros.ConvertDecimalDegressToDecimalHrs(verticalShiftOfUpperLimb))
 	UTrHrs, UTrMin, UTrSec, UTsHrs, UTsMin, UTsSec, _, _ := coords.CalculateRisingAndSettingTime(GDay, GMonth, GYear, int(raHrs), int(raMins), raSecs, decDeg, decMin, decSec, geoLatN, geoLongW, refractionInArcMin)
 	_, _, _, riseHrs, riseMin, riseSec = datetime.ConvertUniversalTimeToLocalTime(GDay, int(GMonth), int(GYear), int(UTrHrs), int(UTrMin), UTrSec, int(daylightsavingHrs), int(daylightsavingMin), timeZone)
 	_, _, _, SetHrs, SetMin, SetSec = datetime.ConvertUniversalTimeToLocalTime(GDay, int(GMonth), int(GYear), int(UTsHrs), int(UTsMin), UTsSec, int(daylightsavingHrs), int(daylightsavingMin), timeZone)
 	// fmt.Printf("\nriseHrs : %d\nriseMin : %d\nriseSec : %f\nSetHrs : %d\nsetMin : %d\nsetSec : %f\n", riseHrs, riseMin, riseSec, SetHrs, SetMin, SetSec)
-	return riseHrs, riseMin, riseSec, SetHrs, SetMin, SetSec
+	return riseHrs + verticalShiftHrs, riseMin + verticalShiftMin, riseSec + verticalShiftSec, SetHrs + verticalShiftHrs, SetMin + verticalShiftMin, SetSec + verticalShiftSec
+}
+
+func CalculateCalculateSunTwilight(GDay float64, GMonth, GYear int, UTHrs, UTMins int, UTSec, geoLongW, geoLatN, refractionInArcMin, daylightsavingHrs, daylightsavingMin, timeZone, epochDay float64, epochMonth, epochYear int) (int, int, float64, int, int, float64) {
+	_, _, _, decDeg, decMin, decSec, _ := CalculatePositionOfSun(GDay, GMonth, GYear, UTHrs, UTMins, UTSec, epochDay, epochMonth, epochYear)
+	lambda := macros.ConvertDegMinSecToDecimalDeg(decDeg, decMin, decSec)
+	riseHrs, riseMin, riseSec, SetHrs, SetMin, SetSec := CalculateSunsRiseAndSet(GDay, GMonth, GYear, UTHrs, UTMins, UTSec, geoLongW, geoLatN, refractionInArcMin, daylightsavingHrs, daylightsavingMin, timeZone, epochDay, epochMonth, epochYear)
+	hourAngle := math.Acos(-math.Tan(macros.ConvertDegreesToRadiance(geoLatN)) * math.Tan(macros.ConvertDegreesToRadiance(lambda)))
+	hourAngleInv := math.Acos((math.Cos(macros.ConvertDegreesToRadiance(108)) - (math.Sin(macros.ConvertDegreesToRadiance(geoLatN)) * math.Sin(macros.ConvertDegreesToRadiance(lambda)))) / (math.Cos(macros.ConvertDegreesToRadiance(geoLatN)) * math.Cos(macros.ConvertDegreesToRadiance(lambda))))
+	tUTDecimalHrs := (macros.ConvertRadianceToDegree(hourAngleInv-hourAngle) / 15) * 0.9973
+	tUTHrs, tUTMin, tUTSec := datetime.ConvertDecimalHrsToHrsMinSec(tUTDecimalHrs)
+	// fmt.Printf("\nlambda : %f\nhourAngle : %f\nhourAngleInv : %f\ntUTDecimalHrs : %f\n", lambda, hourAngle, hourAngleInv, tUTDecimalHrs)
+	return riseHrs - tUTHrs, riseMin - tUTMin, riseSec - tUTSec, SetHrs + tUTHrs, SetMin + tUTMin, SetSec + tUTSec
+}
+
+func CalculateTheEquationOfTime(GDay float64, GMonth, GYear int, UTHrs, UTMins int, UTSec, geoLongW, geoLatN, refractionInArcMin, daylightsavingHrs, daylightsavingMin, timeZone, epochDay float64, epochMonth, epochYear int) (eqHrs, eqMin int, eqSec float64) {
+	raHrs, raMin, raSec, _, _, _, _ := CalculatePositionOfSun(GDay, GMonth, GYear, UTHrs, UTMins, UTSec, epochDay, epochMonth, epochYear)
+	raUTHrs, raUTMin, raUTSec := datetime.ConvertGreenwichSiderealTimeToUniversalTime(GDay, GMonth, GYear, raHrs, raMin, raSec)
+	eqHrs, eqMin, eqSec = datetime.ConvertDecimalHrsToHrsMinSec(datetime.ConvertHrsMinSecToDecimalHrs(raUTHrs, raUTMin, raUTSec, false, false) - 12)
+	return eqHrs, eqMin, eqSec
 }
