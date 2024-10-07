@@ -34,19 +34,18 @@ func AdjustAngleRange(angle float64, lowestVal, highestVal int) float64 {
 }
 
 func CalculateEgWgAnde(GDay float64, GMonth, GYear int, UTHrs, UTMins int, UTSec float64) (Eg, Wg, e float64) {
-	julianDate := datetime.ConvertGreenwichDateToJulianDate(GDay, int(GMonth), int(GYear))
-	var T float64
-	if (julianDate - 2455196.5) < 0.1 {
-		T = 1.0
-		Eg = 279.557208
-		Wg = 283.112438
-		e = 0.016705
-	} else {
-		T = (julianDate - 2415020.0) / 36525
-		Eg = AdjustAngleRange(279.6966778+(36000.76892*T)+(0.0003025*math.Pow(T, 2)), 0, 360)
-		Wg = AdjustAngleRange(281.2208444+(1.719175*T)+(0.000452778*math.Pow(T, 2)), 0, 360)
-		e = AdjustAngleRange(0.01675104-(0.0000418*T)-(0.000000126*math.Pow(T, 2)), 0, 360)
-	}
+	julianDate := datetime.ConvertGreenwichDateToJulianDate(GDay, GMonth, GYear)
+	// if (julianDate - 2455196.5) < 0.1 {
+	// 	T = 1.0
+	// 	Eg = 279.557208
+	// 	Wg = 283.112438
+	// 	e = 0.016705
+	// } else {
+	T := RoundToNDecimals(((julianDate - 2415020.0) / 36525), 6)
+	Eg = AdjustAngleRange(279.6966778+(36000.76892*T)+(0.0003025*math.Pow(T, 2)), 0, 360)
+	Wg = AdjustAngleRange(281.2208444+(1.719175*T)+(0.000452778*math.Pow(T, 2)), 0, 360)
+	e = AdjustAngleRange(0.01675104-(0.0000418*T)-(0.000000126*math.Pow(T, 2)), 0, 360)
+	// }
 
 	return Eg, Wg, e
 }
@@ -128,14 +127,14 @@ func ConvertDecimalDegToDegMinSec(decimalDeg float64) (deg, min int, sec float64
 func CalculateEclipticMeanObliquity(Gday float64, GMonth, GYear int) (obliquityDeg, obliquityMin int, obliquitySec, meanObliquity float64) {
 	julianDate := datetime.ConvertGreenwichDateToJulianDate(Gday, GMonth, GYear)
 	timeElapsed := (julianDate - 2451545.0) / 36525.0
-	meanObliquity = 23.439292 - (((46.815 * timeElapsed) + (0.0006 * math.Pow(timeElapsed, 2)) - (0.00181 * math.Pow(timeElapsed, 3))) / 3600)
+	meanObliquity = RoundToNDecimals(23.439292-(((46.815*timeElapsed)+(0.0006*math.Pow(timeElapsed, 2))-(0.00181*math.Pow(timeElapsed, 3)))/3600), 6)
 	obliquityDeg, obliquityMin, obliquitySec = ConvertDecimalDegToDegMinSec(meanObliquity)
 
 	return obliquityDeg, obliquityMin, obliquitySec, meanObliquity
 }
 
 func ConvertDegMinSecToDecimalDeg(deg, min int, sec float64) float64 {
-	decimalDeg := math.Abs(float64(deg)) + float64(min)/60 + (sec / 3600)
+	decimalDeg := RoundToNDecimals(math.Abs(float64(deg))+float64(min)/60+(sec/3600), 6)
 	if deg < 0 {
 		return -decimalDeg
 	}
@@ -255,20 +254,20 @@ func AdjustAngleInQuadrant(x, y, A float64) float64 {
 	return A
 }
 
-func CalculateEccentricAnomaly(M, e float64) float64 {
-	E := M // Initial guess for E is M
+func CalculateEccentricAnomaly(M, e float64) (Erad float64) {
+	Erad = M // Initial guess for E is M
 
 	for {
-		delta := E - (e * math.Sin(E)) - M
+		delta := Erad - (e * math.Sin(Erad)) - M
 
-		deltaE := delta / (1 - (e * math.Cos(E)))
+		deltaE := delta / (1 - (e * math.Cos(Erad)))
 
-		E -= deltaE
+		Erad -= deltaE
 
 		if math.Abs(deltaE) < 1e-6 {
 			break
 		}
 	}
 
-	return E
+	return Erad
 }

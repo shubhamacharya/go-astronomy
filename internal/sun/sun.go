@@ -1,6 +1,7 @@
 package sun
 
 import (
+	"fmt"
 	"go-astronomy/internal/coords"
 	datetime "go-astronomy/internal/dateTime"
 	"go-astronomy/internal/macros"
@@ -35,7 +36,6 @@ func CalculatePrecisePositionOfSun(GDay float64, GMonth, GYear int, UTHrs, UTMin
 	}
 	lambda0Deg, lambda0Min, lambda0Sec := macros.ConvertDecimalDegToDegMinSec(lambda0)
 	raHrs, raMins, raSecs, decDeg, decMin, decSec = macros.ConvertEclipticCoordinatesToEquatorial(GDay, GMonth, GYear, lambda0Deg, lambda0Min, lambda0Sec, 0, 0, 0, epochDay, epochMonth, epochYear)
-
 	return raHrs, raMins, raSecs, decDeg, decMin, decSec, lambda0
 }
 
@@ -58,10 +58,12 @@ func CalculateSunsRiseAndSet(GDay float64, GMonth, GYear int, UTHrs, UTMins int,
 	raHrs, raMins, raSecs, decDeg, decMin, decSec, _ := CalculatePositionOfSun(GDay, GMonth, GYear, UTHrs, UTMins, UTSec, epochDay, epochMonth, epochYear)
 	// fmt.Printf("\nra : %f\ndec :  %f\n", datetime.ConvertHrsMinSecToDecimalHrs(raHrs, raMins, raSecs, false, false), macros.ConvertDegMinSecToDecimalDeg(decDeg, decMin, decSec))
 	verticalShiftHrs, verticalShiftMin, verticalShiftSec := datetime.ConvertDecimalHrsToHrsMinSec(macros.ConvertDecimalDegressToDecimalHrs(verticalShiftOfUpperLimb))
-	UTrHrs, UTrMin, UTrSec, UTsHrs, UTsMin, UTsSec, _, _ := coords.CalculateRisingAndSettingTime(GDay, GMonth, GYear, int(raHrs), int(raMins), raSecs, decDeg, decMin, decSec, geoLatN, geoLongW, refractionInArcMin)
-	_, _, _, riseHrs, riseMin, riseSec = datetime.ConvertUniversalTimeToLocalTime(GDay, int(GMonth), int(GYear), int(UTrHrs), int(UTrMin), UTrSec, int(daylightsavingHrs), int(daylightsavingMin), timeZone)
-	_, _, _, SetHrs, SetMin, SetSec = datetime.ConvertUniversalTimeToLocalTime(GDay, int(GMonth), int(GYear), int(UTsHrs), int(UTsMin), UTsSec, int(daylightsavingHrs), int(daylightsavingMin), timeZone)
-	// fmt.Printf("\nriseHrs : %d\nriseMin : %d\nriseSec : %f\nSetHrs : %d\nsetMin : %d\nsetSec : %f\n", riseHrs, riseMin, riseSec, SetHrs, SetMin, SetSec)
+	UTrHrs, UTrMin, UTrSec, UTsHrs, UTsMin, UTsSec, _, _ := coords.CalculateRisingAndSettingTime(GDay, GMonth, GYear, raHrs, raMins, raSecs, decDeg, decMin, decSec, geoLatN, geoLongW, refractionInArcMin)
+	fmt.Printf("\nUTriseHrs : %d\nUTriseMin : %d\nUTriseSec : %f\nUTSetHrs : %d\nUTsetMin : %d\nUTsetSec : %f\n", UTrHrs, UTrMin, UTrSec, UTsHrs, UTsMin, UTsSec)
+
+	_, _, _, riseHrs, riseMin, riseSec = datetime.ConvertUniversalTimeToLocalTime(GDay, GMonth, GYear, UTrHrs, UTrMin, UTrSec, int(daylightsavingHrs), int(daylightsavingMin), timeZone)
+	_, _, _, SetHrs, SetMin, SetSec = datetime.ConvertUniversalTimeToLocalTime(GDay, GMonth, GYear, UTsHrs, UTsMin, UTsSec, int(daylightsavingHrs), int(daylightsavingMin), timeZone)
+	fmt.Printf("\nriseHrs : %d\nriseMin : %d\nriseSec : %f\nSetHrs : %d\nsetMin : %d\nsetSec : %f\n", riseHrs, riseMin, riseSec, SetHrs, SetMin, SetSec)
 	return riseHrs + verticalShiftHrs, riseMin + verticalShiftMin, riseSec + verticalShiftSec, SetHrs + verticalShiftHrs, SetMin + verticalShiftMin, SetSec + verticalShiftSec
 }
 

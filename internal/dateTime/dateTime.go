@@ -1,6 +1,7 @@
 package datetime
 
 import (
+	"fmt"
 	"math"
 )
 
@@ -94,8 +95,10 @@ func ConvertGreenwichDateToJulianDate(day float64, month, year int) float64 {
 	daysInMonth = math.Floor(30.6001 * float64(month+1))
 
 	// Calculate the Julian date
+	// factor := math.Pow(10, float64(6)) // Roundoff it to 6 decimal places
 	julianDate := correctionFactor + daysInYear + daysInMonth + float64(day) + 1720994.5
 
+	// return math.Round(julianDate*factor) / factor
 	return julianDate
 }
 
@@ -171,8 +174,8 @@ func ConvertHrsMinSecToDecimalHrs(Hrs int, min int, sec float64, is12HrClock boo
 			}
 		}
 	}
-
-	return A
+	factor := math.Pow(10, float64(6))
+	return math.Round(A*factor) / factor
 }
 
 func ConvertDecimalHrsToHrsMinSec(decimalHours float64) (hours, minutes int, seconds float64) {
@@ -240,13 +243,25 @@ func ConvertLocalTimeToUniversalTime(day float64, month int, year int, hrs int, 
 }
 
 func ConvertUniversalTimeToLocalTime(day float64, month int, year int, hrs int, min int, sec float64, daylightsavingHrs int, daylightsavingMin int, zoneOffset float64) (Gday float64, calMonth, calYear, GHrs, GMin int, GSec float64) {
+	factor := math.Pow(10, float64(6))
 	decimalHrs := ConvertHrsMinSecToDecimalHrs(hrs, min, sec, false, false) + zoneOffset + float64(daylightsavingHrs) + float64(daylightsavingMin)
+	decimalHrs = math.Round(decimalHrs*factor) / factor
+
 	julianDate := ConvertGreenwichDateToJulianDate(day, month, year) + (decimalHrs / 24)
+	julianDate = math.Round(julianDate*factor) / factor
+
 	calDay, calMonth, calYear := ConvertJulianDateToGreenwichDate(julianDate)
+	// calDay = math.Round(calDay*factor) / factor
 
 	Gday, GTime := math.Modf(calDay)
+	// Gday = math.Round(Gday*factor) / factor
+	// GTime = math.Round(GTime*factor) / factor
 
-	GHrs, GMin, GSec = ConvertDecimalHrsToHrsMinSec(GTime * 24.0)
+	fmt.Printf("\ndecimalHrs : %v\nJulianDate : %v\n", decimalHrs, julianDate)
+	fmt.Printf("\ncalDay : %v\ncalMonth : %v\ncalYear : %v\n", calDay, calMonth, calYear)
+	fmt.Printf("\nGday : %v\nGTime : %v\n", calDay, GTime)
+
+	GHrs, GMin, GSec = ConvertDecimalHrsToHrsMinSec(GTime * 24)
 
 	return Gday, calMonth, calYear, GHrs, GMin, GSec
 }

@@ -22,3 +22,23 @@ func TestCalculateCoordinatesOfPlanet(t *testing.T) {
 		t.Fatalf(`Error while Calculating Coordinates Of Planet Mercury. Required: Rising = %d %d %f  Setting = %d %d %f   Got: Rising = %d %d %f  Setting = %d %d %f`, 16, 49, 12.26, -24, 30, 3.14, raHrs, raMins, raSecs, decDeg, decMin, decSec)
 	}
 }
+
+func TestCalculateApproximatePositionOfPlanet(t *testing.T) {
+	raHrs, raMins, raSecs, decDeg, decMin, decSec := planets.CalculateApproximatePositionOfPlanet(22.0, 11, 2003, "Jupiter", 1, 1, 2010)
+	const tolerance = 0.01 // Define an acceptable error range
+
+	if math.Abs(float64(raHrs)-10.0) > tolerance || math.Abs(float64(raMins)-58.0) > tolerance || math.Abs(raSecs-21.85) > tolerance &&
+		math.Abs(float64(decDeg)-6.0) > tolerance || math.Abs(float64(decMin)-34.0) > tolerance || math.Abs(decSec-16.42) > tolerance {
+		t.Fatalf(`Error while Calculating Approximate Position Of Planet Jupiter. Required: Rising = %d %d %f  Setting = %d %d %f   Got: Rising = %d %d %f  Setting = %d %d %f`, 10, 58, 21.85, 6, 34, 16.42, raHrs, raMins, raSecs, decDeg, decMin, decSec)
+	}
+}
+
+func TestCalculatePerturbationsInPlanetsOrbit(t *testing.T) {
+	raHrs, raMins, raSecs, decDeg, decMin, decSec := planets.CalculatePerturbationsInPlanetsOrbit(22.0, 11, 2003, "Jupiter", 1, 1, 2010)
+	const tolerance = 0.01 // Define an acceptable error range
+
+	if math.Abs(float64(raHrs)-10.0) > tolerance || math.Abs(float64(raMins)-58.0) > tolerance || math.Abs(raSecs-21.85) > tolerance &&
+		math.Abs(float64(decDeg)-6.0) > tolerance || math.Abs(float64(decMin)-34.0) > tolerance || math.Abs(decSec-16.42) > tolerance {
+		t.Fatalf(`Error while Calculating Approximate Position Of Planet Jupiter. Required: Rising = %d %d %f  Setting = %d %d %f   Got: Rising = %d %d %f  Setting = %d %d %f`, 10, 58, 21.85, 6, 34, 16.42, raHrs, raMins, raSecs, decDeg, decMin, decSec)
+	}
+}

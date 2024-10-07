@@ -166,9 +166,9 @@ func CalculateAngleBetweenTwoCelestialObjects(p1RAHrs, p1RAMin int, p1RASec floa
 }
 
 func CalculateRisingAndSettingTime(Gday float64, Gmonth, Gyear, raHrs, raMin int, raSec float64, decDeg, decMin int, decSec, geoLatN, geoLongW, refractionInArcMin float64) (UTrHrs, UTrMin int, UTrSec float64, UTsHrs, UTsMin int, UTsSec, azimuthRise, azimuthSet float64) {
-	decimalRAHrs := datetime.ConvertHrsMinSecToDecimalHrs(int(raHrs), int(raMin), raSec, false, false)
+	decimalRAHrs := datetime.ConvertHrsMinSecToDecimalHrs(raHrs, raMin, raSec, false, false)
 	decimalDECDeg := macros.ConvertDegMinSecToDecimalDeg(decDeg, decMin, decSec)
-	refractionDeg := refractionInArcMin / 60 // Converted refraction from arcmin to degress
+	refractionDeg := macros.RoundToNDecimals(refractionInArcMin/60, 6) // Converted refraction from arcmin to degress
 
 	cosH := -((math.Sin(macros.ConvertDegreesToRadiance(refractionDeg)) + (math.Sin(macros.ConvertDegreesToRadiance(geoLatN)) * math.Sin(macros.ConvertDegreesToRadiance(decimalDECDeg)))) / (math.Cos(macros.ConvertDegreesToRadiance(geoLatN)) * math.Cos(macros.ConvertDegreesToRadiance(decimalDECDeg))))
 	H := 0.0
@@ -192,7 +192,7 @@ func CalculateRisingAndSettingTime(Gday float64, Gmonth, Gyear, raHrs, raMin int
 	GSTsHrs, GSTsMin, GSTsSec, _ := datetime.CalculateGreenwichSiderealTimeUsingLocalSiderealTime(sHrs, sMin, sSec, geoLongW)
 	UTrHrs, UTrMin, UTrSec = datetime.ConvertGreenwichSiderealTimeToUniversalTime(Gday, Gmonth, Gyear, GSTrHrs, GSTrMin, GSTrSec)
 	UTsHrs, UTsMin, UTsSec = datetime.ConvertGreenwichSiderealTimeToUniversalTime(Gday, Gmonth, Gyear, GSTsHrs, GSTsMin, GSTsSec)
-
+	// fmt.Printf("\ndecimalRAHrs : %v\ndecimalDECDeg : %v\n", decimalRAHrs, decimalDECDeg)
 	return UTrHrs, UTrMin, UTrSec, UTsHrs, UTsMin, UTsSec, azimuthRise, azimuthSet
 }
 
@@ -309,8 +309,8 @@ func CalculateHeliographicCoordinates(day float64, month, year, UTHrs, UTMin int
 	julianDate := datetime.ConvertGreenwichDateToJulianDate(day, month, year)
 	epochDate := datetime.ConvertGreenwichDateToJulianDate(epochDay, epochMonth, epochYear)
 	Ideg := 7.25
-	T := (julianDate - epochDate) / 36525.0
-	deltaDeg := (84 * T) / 60
+	T := macros.RoundToNDecimals((julianDate-epochDate)/36525.0, 6)
+	deltaDeg := macros.RoundToNDecimals((84*T)/60, 6)
 	gamma := macros.ConvertDegMinSecToDecimalDeg(74, 22, 0) + deltaDeg
 	lambda := macros.CalculatePositionOfSunHelper(day, month, year, UTHrs, UTMin, UTSec, epochDay, epochMonth, epochYear)
 	y := math.Sin(macros.ConvertDegreesToRadiance(gamma-lambda)) * math.Cos(macros.ConvertDegreesToRadiance(Ideg))
@@ -318,7 +318,7 @@ func CalculateHeliographicCoordinates(day float64, month, year, UTHrs, UTMin int
 	AInv := macros.ConvertRadianceToDegree(math.Atan2(y, x))
 	MInv := macros.AdjustAngleRange((360/25.38)*(julianDate-2398220), 0, 360)
 
-	M := 360 - MInv
+	M := macros.RoundToNDecimals(360-MInv, 6)
 	L0 := macros.AdjustAngleRange(M+AInv, 0, 360)
 
 	B0 := macros.ConvertRadianceToDegree(math.Asin(math.Sin(macros.ConvertDegreesToRadiance(lambda-gamma)) * math.Sin(macros.ConvertDegreesToRadiance(Ideg))))
@@ -330,7 +330,7 @@ func CalculateHeliographicCoordinates(day float64, month, year, UTHrs, UTMin int
 	// Convert Arcmin to decimal deg
 	SdecimalArcmin := macros.ConvertDegMinSecToDecimalDeg(angularRadiusSDeg, angularRadiusSMin, angularRadiusSSec) * 60
 	sinInv := macros.ConvertRadianceToDegree(math.Asin(displacementP1 / SdecimalArcmin))
-	P1 := sinInv - (displacementP1 / 60)
+	P1 := macros.RoundToNDecimals(sinInv-(displacementP1/60), 6)
 	B := macros.ConvertRadianceToDegree(math.Asin((math.Sin(macros.ConvertDegreesToRadiance(B0)) * math.Cos(macros.ConvertDegreesToRadiance(P1))) + (math.Cos(macros.ConvertDegreesToRadiance(B0)) * math.Sin(macros.ConvertDegreesToRadiance(P1)) * math.Cos(macros.ConvertDegreesToRadiance(P-positionAngleTheta)))))
 	A := macros.ConvertRadianceToDegree(math.Asin((math.Sin(macros.ConvertDegreesToRadiance(P1)) * math.Sin(macros.ConvertDegreesToRadiance(P-positionAngleTheta))) / math.Cos(macros.ConvertDegreesToRadiance((B)))))
 	L := macros.AdjustAngleRange(A+L0, 0, 360)

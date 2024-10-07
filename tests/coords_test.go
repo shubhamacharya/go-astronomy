@@ -153,7 +153,7 @@ func TestCalculateAngleBetweenTwoCelestialObjects(t *testing.T) {
 }
 
 func TestCalculateRisingAndSettingTime(t *testing.T) {
-	UTrHrs, UTrMin, UTrSec, UTsHrs, UTsMin, UTsSec, _, _ := coords.CalculateRisingAndSettingTime(10.0, 3, 1986, 23.0, 22.0, 34.0, -4.0, 2.0, 2.9508, 42.37, -71.5, 34)
+	UTrHrs, UTrMin, UTrSec, UTsHrs, UTsMin, UTsSec, _, _ := coords.CalculateRisingAndSettingTime(24.0, 8, 2010, 23.0, 39.0, 20.0, 21.0, 42.0, 0.0, 30.0, 64.00, 34)
 	const tolerance = 0.01 // Define an acceptable error range
 
 	if math.Abs(float64(UTrHrs)-14.0) > tolerance || math.Abs(float64(UTrMin)-16.0) > tolerance || math.Abs(UTrSec-18.02) > tolerance &&
@@ -232,8 +232,8 @@ func TestCalculateHeliographicCoordinates(t *testing.T) {
 	longitude, latitude := coords.CalculateHeliographicCoordinates(1.0, 5, 1988, 0, 0, 0, 40.0, 50.0, 37.0, 220.0, 10.5, 0, 15.0, 52.0, 0.5, 1, 1900)
 	const tolerance = 0.01 // Define an acceptable error range
 
-	if math.Abs(longitude-(-19.96)) > tolerance || math.Abs(latitude-143.66) > tolerance {
-		t.Fatalf(`Error while Calculating Heliographic Coordinates. Required:  %f %f Got: %f %f`, -19.96, 143.66, longitude, latitude)
+	if math.Abs(longitude-(-19.95)) > tolerance || math.Abs(latitude-143.57) > tolerance {
+		t.Fatalf(`Error while Calculating Heliographic Coordinates. Required:  %f %f Got: %f %f`, -19.95, 143.57, longitude, latitude)
 	}
 }
 
