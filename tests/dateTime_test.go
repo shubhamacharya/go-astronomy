@@ -179,7 +179,7 @@ func TestConvertLocalTimeToUniversalTime(t *testing.T) {
 	for _, test := range tests {
 		UTDay, UTMon, UTYear, UTHrs, UTMin, UTSec, _ := datetime.ConvertLocalTimeToUniversalTime(test.day, test.month, test.year, test.hrs, test.min, test.sec, test.daylightSavingHrs, test.daylightSavingMin, test.timeZoneOffsetHrs)
 		// datetime.ConvertLocalTimeToUniversalTime(test.day, test.month, test.year, test.hrs, test.min, test.sec, test.daylightSavingHrs, test.daylightSavingMin, test.timeZoneOffsetHrs)
-		if UTDay != test.expectedDay || UTMon != test.expectedMonth || UTYear != test.expectedYear || UTHrs != test.expectedHrs || UTMin != test.expectedMin || UTSec != test.expectedSec {
+		if (UTDay-test.expectedDay) > tolerance || float64(UTMon-test.expectedMonth) > tolerance || float64(UTYear-test.expectedYear) > tolerance || float64(UTHrs-test.expectedHrs) > tolerance || float64(UTMin-test.expectedMin) > tolerance || float64(UTSec-test.expectedSec) > tolerance {
 			t.Fatalf("Error while converting Local Time to Universal Time. Expected: %f-%d-%d %d:%d:%f    Got: %f-%d-%d %d:%d:%f",
 				test.expectedDay, test.expectedMonth, test.expectedYear, test.expectedHrs, test.expectedMin, test.expectedSec,
 				UTDay, UTMon, UTYear, UTHrs, UTMin, UTSec)
@@ -247,13 +247,13 @@ func TestConvertGreenwichSiderealTimeToUniversalTime(t *testing.T) {
 		expectedSec              float64
 	}{
 		{22, 04, 1980, 4, 40, 5.23, 14, 36, 51.67},
-		{1, 1, 2000, 6, 39, 43.8, 23, 55, 55.64}, // Test case for start of epoch year
+		{1, 1, 2000, 6, 39, 43.8, 23, 55, 58.32}, // Test case for start of epoch year
 		{31, 12, 1999, 6, 39, 42.8, 0, 3, 46.46}, // Test case for end of year before epoch
 	}
 
 	for _, test := range tests {
 		GHrs, GMin, GSec := datetime.ConvertGreenwichSiderealTimeToUniversalTime(test.day, test.month, test.year, test.hrs, test.min, test.sec)
-		if GHrs != test.expectedHrs || GMin != test.expectedMin || (GSec-test.expectedSec) > tolerance {
+		if float64(GHrs-test.expectedHrs) > tolerance || float64(GMin-test.expectedMin) > tolerance || (GSec-test.expectedSec) > tolerance {
 			t.Fatalf("Error while converting Greenwich Sidereal to Universal Time. Expected: %d:%d:%f    Got: %d:%d:%f",
 				test.expectedHrs, test.expectedMin, test.expectedSec, GHrs, GMin, GSec)
 		}

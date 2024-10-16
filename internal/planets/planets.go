@@ -104,10 +104,8 @@ func CalculatePerturbationsInPlanetsOrbit(day float64, month, year int, planetNa
 	Np := macros.AdjustAngleRange((360/365.242191)*(totalDays/planetValues["Tp"].(float64)), 0, 360)
 	Mp := Np + planetValues["Long"].(float64) - planetValues["Peri"].(float64)
 
-	Ep, Wp, e := macros.CalculateEgWgAnde(day, month, year, 0, 0, 0.0)
-	// Eg, Wg, e := macros.AdjustAngleRange(planetValues["Long"].(float64), 0, 360), macros.AdjustAngleRange(planetValues["Peri"].(float64), 0, 360), macros.AdjustAngleRange(planetValues["Ecc"].(float64), 0, 360)
-	// fmt.Printf("\n%f = %f\n%f = %f\n%f = %f\n", Eg, planetValues["Long"].(float64), Wg, planetValues["Peri"].(float64), e, planetValues["Ecc"].(float64))
-	fmt.Printf("\nEg : %f\nWg : %f\ne : %f\n", Ep, Wp, e)
+	Ep, Wp, e, _, _ := macros.CalculateEgWgAnde(day, month, year, 0, 0, 0.0, epochDay, epochMonth, epochYear)
+	// fmt.Printf("\nEg : %f\nWg : %f\ne : %f\n", Ep, Wp, e)
 	MRad := macros.ConvertDegreesToRadiance(macros.AdjustAngleRange(Ep-Wp, 0, 360))
 	eccentricAnomaly := macros.ConvertRadianceToDegree(macros.CalculateEccentricAnomaly(MRad, e))
 	Vp := macros.ConvertRadianceToDegree(math.Atan(math.Sqrt((1+e)/(1-e))*math.Tan(macros.ConvertDegreesToRadiance(eccentricAnomaly/2))) * 2)

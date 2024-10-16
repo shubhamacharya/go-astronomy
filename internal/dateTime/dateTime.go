@@ -1,7 +1,6 @@
 package datetime
 
 import (
-	"fmt"
 	"math"
 )
 
@@ -187,7 +186,8 @@ func ConvertDecimalHrsToHrsMinSec(decimalHours float64) (hours, minutes int, sec
 	minutesFloat, fractionalMinutes := math.Modf(fractionalHours * 60)
 
 	// Convert fractional minutes to seconds
-	seconds = fractionalMinutes * 60
+	factor := math.Pow(10, float64(6))
+	seconds = math.Round((fractionalMinutes*60)*factor) / factor
 
 	if math.Round(seconds) == 60 {
 		seconds = 0
@@ -251,15 +251,15 @@ func ConvertUniversalTimeToLocalTime(day float64, month int, year int, hrs int, 
 	julianDate = math.Round(julianDate*factor) / factor
 
 	calDay, calMonth, calYear := ConvertJulianDateToGreenwichDate(julianDate)
-	// calDay = math.Round(calDay*factor) / factor
+	calDay = math.Round(calDay*factor) / factor
 
 	Gday, GTime := math.Modf(calDay)
-	// Gday = math.Round(Gday*factor) / factor
-	// GTime = math.Round(GTime*factor) / factor
+	Gday = math.Round(Gday*factor) / factor
+	GTime = math.Round(GTime*factor) / factor
 
-	fmt.Printf("\ndecimalHrs : %v\nJulianDate : %v\n", decimalHrs, julianDate)
-	fmt.Printf("\ncalDay : %v\ncalMonth : %v\ncalYear : %v\n", calDay, calMonth, calYear)
-	fmt.Printf("\nGday : %v\nGTime : %v\n", calDay, GTime)
+	// fmt.Printf("\ndecimalHrs : %v\nJulianDate : %v\n", decimalHrs, julianDate)
+	// fmt.Printf("\ncalDay : %v\ncalMonth : %v\ncalYear : %v\n", calDay, calMonth, calYear)
+	// fmt.Printf("\nGday : %v\nGTime : %v\n", calDay, GTime)
 
 	GHrs, GMin, GSec = ConvertDecimalHrsToHrsMinSec(GTime * 24)
 
@@ -298,8 +298,11 @@ func ConvertUniversalTimeToGreenwichSiderealTime(day float64, month int, year in
 
 func ConvertGreenwichSiderealTimeToUniversalTime(day float64, month int, year int, hrs int, min int, sec float64) (UTHrs, UTMin int, UTSec float64) {
 	julianDate := ConvertGreenwichDateToJulianDate(day, month, year)
-	centuriesSinceJ2000 := (julianDate - 2451545.0) / 36525.0
+	centuriesSinceJ2000 := ((julianDate - 2451545.0) / 36525.0)
+	factor := math.Pow(10, float64(6))
+	centuriesSinceJ2000 = math.Round(centuriesSinceJ2000*factor) / factor
 	gstAtZeroUT := 6.697374558 + (2400.051336 * centuriesSinceJ2000) + (0.000025862 * math.Pow(centuriesSinceJ2000, 2))
+	gstAtZeroUT = math.Round(gstAtZeroUT*factor) / factor
 
 	// Normalize GST to the range [0, 24) hours
 	for gstAtZeroUT < 0 {

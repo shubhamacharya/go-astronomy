@@ -168,7 +168,9 @@ func CalculateAngleBetweenTwoCelestialObjects(p1RAHrs, p1RAMin int, p1RASec floa
 func CalculateRisingAndSettingTime(Gday float64, Gmonth, Gyear, raHrs, raMin int, raSec float64, decDeg, decMin int, decSec, geoLatN, geoLongW, refractionInArcMin float64) (UTrHrs, UTrMin int, UTrSec float64, UTsHrs, UTsMin int, UTsSec, azimuthRise, azimuthSet float64) {
 	decimalRAHrs := datetime.ConvertHrsMinSecToDecimalHrs(raHrs, raMin, raSec, false, false)
 	decimalDECDeg := macros.ConvertDegMinSecToDecimalDeg(decDeg, decMin, decSec)
-	refractionDeg := macros.RoundToNDecimals(refractionInArcMin/60, 6) // Converted refraction from arcmin to degress
+	// decimalRAHrs := 23.375999
+	// decimalDECDeg := -4.034153
+	refractionDeg := refractionInArcMin / 60 // Converted refraction from arcmin to degress
 
 	cosH := -((math.Sin(macros.ConvertDegreesToRadiance(refractionDeg)) + (math.Sin(macros.ConvertDegreesToRadiance(geoLatN)) * math.Sin(macros.ConvertDegreesToRadiance(decimalDECDeg)))) / (math.Cos(macros.ConvertDegreesToRadiance(geoLatN)) * math.Cos(macros.ConvertDegreesToRadiance(decimalDECDeg))))
 	H := 0.0
@@ -188,8 +190,11 @@ func CalculateRisingAndSettingTime(Gday float64, Gmonth, Gyear, raHrs, raMin int
 	azimuthSet = 360 - azimuthRise
 	rHrs, rMin, rSec := datetime.ConvertDecimalHrsToHrsMinSec(LSTr)
 	sHrs, sMin, sSec := datetime.ConvertDecimalHrsToHrsMinSec(LSTs)
+	// fmt.Printf("\ndecimalRAHrs : %v\ndecimalDEGDeg : %v\n", decimalRAHrs, decimalDECDeg)
+	// fmt.Printf("\nRiseLST : %v %v %v\nSetLST : %v %v %v\n", rHrs, rMin, rSec, sHrs, sMin, sSec)
 	GSTrHrs, GSTrMin, GSTrSec, _ := datetime.CalculateGreenwichSiderealTimeUsingLocalSiderealTime(rHrs, rMin, rSec, geoLongW)
 	GSTsHrs, GSTsMin, GSTsSec, _ := datetime.CalculateGreenwichSiderealTimeUsingLocalSiderealTime(sHrs, sMin, sSec, geoLongW)
+	// fmt.Printf("\nRiseGST : %v %v %v\nSetGST : %v %v %v\n", GSTrHrs, GSTrMin, GSTrSec, GSTsHrs, GSTsMin, GSTsSec)
 	UTrHrs, UTrMin, UTrSec = datetime.ConvertGreenwichSiderealTimeToUniversalTime(Gday, Gmonth, Gyear, GSTrHrs, GSTrMin, GSTrSec)
 	UTsHrs, UTsMin, UTsSec = datetime.ConvertGreenwichSiderealTimeToUniversalTime(Gday, Gmonth, Gyear, GSTsHrs, GSTsMin, GSTsSec)
 	// fmt.Printf("\ndecimalRAHrs : %v\ndecimalDECDeg : %v\n", decimalRAHrs, decimalDECDeg)

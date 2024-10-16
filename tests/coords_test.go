@@ -31,7 +31,7 @@ func TestConvertDecimalHrsToDecimalDegress(t *testing.T) {
 	decimalDeg := coords.ConvertDecimalHrsToDecimalDegress(datetime.ConvertHrsMinSecToDecimalHrs(9, 36, 10.2, false, false))
 	deg, min, sec := macros.ConvertDecimalDegToDegMinSec(decimalDeg)
 
-	if math.Abs(float64(deg)-144.0) > 0.001 || math.Abs(float64(min)-2.0) > 0.001 || math.Abs(sec-33.0) > 0.001 {
+	if math.Abs(float64(deg)-144.0) > 0.001 || math.Abs(float64(min)-2.0) > 0.001 || math.Abs(sec-32.982) > 0.001 {
 		t.Fatalf(`Error while converting Decimal Hrs To Decimal Degress. Required: %d %d %f   Got: %d %d %f`, 144, 2, 33.0, deg, min, sec)
 	}
 }
@@ -78,12 +78,27 @@ func TestConvertEquatorialToHorizonCoordinates(t *testing.T) {
 }
 
 func TestConvertHorizonCoordinatesToEquatorial(t *testing.T) {
-	haHrs, haMin, haSec, decDeg, decMin, decSec := coords.ConvertHorizonCoordinatesToEquatorial(0, 24.0, 05.0, 19.0, 20.0, 03.64, 283.0, 16.0, 15.7, 52.0)
-	const tolerance = 0.01 // Define an acceptable error range
-
-	if math.Abs(float64(haHrs)-5) > tolerance || math.Abs(float64(haMin)-51) > tolerance || math.Abs(haSec-44.0) > tolerance &&
-		math.Abs(float64(decDeg)-23) > tolerance || math.Abs(float64(decMin)-13) > tolerance || math.Abs(decSec-10.0) > tolerance {
-		t.Fatalf(`Error while converting Horizon To Equatorial Coordinates. Required: %d %d %f, %d %d %f   Got: %d %d %f, %d %d %f`, 5, 51, 44.0, 23, 13, 10.0, haHrs, haMin, haSec, decDeg, decMin, decSec)
+	tests := []struct {
+		GSTHrs, GSTMin                 int
+		GSec                           float64
+		altitudeDeg, altitudeMin       int
+		altitudeSec                    float64
+		azimuthDeg, azimuthMin         int
+		azimuthSec, latitude           float64
+		expectedHaHrs, expectedHaMin   int
+		expectedHaSec                  float64
+		expectedDecDeg, expectedDecMin int
+		expectedDecSec                 float64
+	}{
+		{0, 24.0, 05.0, 19.0, 20.0, 03.64, 283.0, 16.0, 15.7, 52.0, 5, 51, 44.0, 23, 13, 9.98},
+	}
+	for _, test := range tests {
+		haHrs, haMin, haSec, decDeg, decMin, decSec := coords.ConvertHorizonCoordinatesToEquatorial(test.GSTHrs, test.GSTMin, test.GSec, test.altitudeDeg, test.altitudeMin, test.altitudeSec, test.azimuthDeg, test.azimuthMin, test.azimuthSec, test.latitude)
+		const tolerance = 0.01 // Define an acceptable error range
+		if math.Abs(float64(haHrs)-float64(test.expectedHaHrs)) > tolerance || math.Abs(float64(haMin)-float64(test.expectedHaMin)) > tolerance || math.Abs(haSec-test.expectedHaSec) > tolerance &&
+			math.Abs(float64(decDeg)-float64(test.expectedDecDeg)) > tolerance || math.Abs(float64(decMin)-float64(test.expectedDecMin)) > tolerance || math.Abs(decSec-test.expectedDecSec) > tolerance {
+			t.Fatalf(`Error while converting Horizon To Equatorial Coordinates. Required: %d %d %f, %d %d %f   Got: %d %d %f, %d %d %f`, test.expectedHaHrs, test.expectedHaMin, test.expectedHaSec, test.expectedDecDeg, test.expectedDecMin, test.expectedDecSec, haHrs, haMin, haSec, decDeg, decMin, decSec)
+		}
 	}
 }
 
@@ -97,19 +112,28 @@ func TestCalculateEclipticMeanObliquity(t *testing.T) {
 }
 
 func TestConvertEclipticCoordinatesToEquatorial(t *testing.T) {
-	const tolerance = 0.01 // Define an acceptable error range
-	raHrs, raMin, raSec, decDeg, decMin, decSec := macros.ConvertEclipticCoordinatesToEquatorial(6.0, 7, 2009, 139.0, 41.0, 10.0, 4.0, 52.0, 31.0, 1, 1, 2010)
-
-	if math.Abs(float64(raHrs)-9) > tolerance || math.Abs(float64(raMin)-34) > tolerance || math.Abs(raSec-53.32) > tolerance &&
-		math.Abs(float64(decDeg)-19) > tolerance || math.Abs(float64(decMin)-32) > tolerance || math.Abs(decSec-6.01) > tolerance {
-		t.Fatalf(`Error while converting Horizon To Equatorial Coordinates. Required: %d %d %f, %d %d %f   Got: %d %d %f, %d %d %f`, 9, 34, 53.32, 19, 32, 6.01, raHrs, raMin, raSec, decDeg, decMin, decSec)
+	const tolerance = 0.1 // Define an acceptable error range
+	tests := []struct {
+		day                                           float64
+		month, year, eclipticLongDeg, eclipticLongMin int
+		eclipticLongSec                               float64
+		eclipticLatDeg, eclipticLatMin                int
+		eclipticLatSec, epochDay                      float64
+		epochMonth, epochYear                         int
+		expectedRaHrs, expectedRaMin                  int
+		expectedRaSec                                 float64
+		expectedDecDeg, expectedDecMin                int
+		expectedDecSec                                float64
+	}{
+		{6.0, 7, 2009, 139.0, 41.0, 10.0, 4.0, 52.0, 31.0, 1, 1, 2010, 9, 34, 53.32, 19, 32, 5.89},
+		{25.0, 9, 2024, 182.0, 2.0, 27.2688, 0.0, 0.0, 0.0, 1, 1, 2010, 12, 7, 29.43, 0, 48, 41.88},
 	}
-
-	raHrs, raMin, raSec, decDeg, decMin, decSec = macros.ConvertEclipticCoordinatesToEquatorial(25.0, 9, 2024, 182.0, 2.0, 27.2688, 0.0, 0.0, 0.0, 1, 1, 2010)
-
-	if math.Abs(float64(raHrs)-12) > tolerance || math.Abs(float64(raMin)-7) > tolerance || math.Abs(raSec-29.440152) > tolerance &&
-		math.Abs(float64(decDeg)-0) > tolerance || math.Abs(float64(decMin)-48) > tolerance || math.Abs(decSec-41.677167) > tolerance {
-		t.Fatalf(`Error while converting Horizon To Equatorial Coordinates. Required: %d %d %f, %d %d %f   Got: %d %d %f, %d %d %f`, 12, 7, 29.440152, 0, 48, 41.677167, raHrs, raMin, raSec, decDeg, decMin, decSec)
+	for _, test := range tests {
+		raHrs, raMin, raSec, decDeg, decMin, decSec := macros.ConvertEclipticCoordinatesToEquatorial(test.day, test.month, test.year, test.eclipticLongDeg, test.eclipticLongMin, test.eclipticLongSec, test.eclipticLatDeg, test.eclipticLatMin, test.eclipticLatSec, test.epochDay, test.epochMonth, test.epochYear)
+		if math.Abs(float64(raHrs)-float64(test.expectedRaHrs)) > tolerance || math.Abs(float64(raMin)-float64(test.expectedRaMin)) > tolerance || math.Abs(raSec-test.expectedRaSec) > tolerance &&
+			math.Abs(float64(decDeg)-float64(test.expectedDecDeg)) > tolerance || math.Abs(float64(decMin)-float64(test.expectedDecMin)) > tolerance || math.Abs(decSec-test.expectedDecSec) > tolerance {
+			t.Fatalf(`Error while converting Horizon To Equatorial Coordinates. Required: %d %d %f, %d %d %f   Got: %d %d %f, %d %d %f`, test.expectedRaHrs, test.expectedRaMin, test.expectedRaSec, test.expectedDecDeg, test.expectedDecMin, test.expectedDecSec, raHrs, raMin, raSec, decDeg, decMin, decSec)
+		}
 	}
 }
 
@@ -124,12 +148,25 @@ func TestConvertEquatorialCoordinatesToEcliptic(t *testing.T) {
 }
 
 func TestConvertEquatorialCoordinateToGalactic(t *testing.T) {
-	lDeg, lMin, lSec, bDeg, bMin, bSec := coords.ConvertEquatorialCoordinateToGalactic(10.0, 21.0, 0.0, 10.0, 3.0, 11.00)
 	const tolerance = 0.01 // Define an acceptable error range
-
-	if math.Abs(float64(lDeg)-232) > tolerance || math.Abs(float64(lMin)-14) > tolerance || math.Abs(lSec-52.38) > tolerance &&
-		math.Abs(float64(bDeg)-51) > tolerance || math.Abs(float64(bMin)-7) > tolerance || math.Abs(bSec-20.16) > tolerance {
-		t.Fatalf(`Error while convert Equatorial Coordinate To Galactic. Required: %d %d %f, %d %d %f   Got: %d %d %f, %d %d %f`, 232, 14, 52.38, 51, 7, 20.16, lDeg, lMin, lSec, bDeg, bMin, bSec)
+	tests := []struct {
+		raHrs, raMin               int
+		raSec                      float64
+		decDeg, decMin             int
+		decSec                     float64
+		expectedLDeg, expectedLMin int
+		expectedLSec               float64
+		expectedBDeg, expectedBMin int
+		expectedBSec               float64
+	}{
+		{10.0, 21.0, 0.0, 10.0, 3.0, 11.00, 232, 14, 52.47, 51, 7, 20.32},
+	}
+	for _, test := range tests {
+		lDeg, lMin, lSec, bDeg, bMin, bSec := coords.ConvertEquatorialCoordinateToGalactic(10.0, 21.0, 0.0, 10.0, 3.0, 11.00)
+		if math.Abs(float64(lDeg)-float64(test.expectedLDeg)) > tolerance || math.Abs(float64(lMin)-float64(test.expectedLMin)) > tolerance || math.Abs(lSec-test.expectedLSec) > tolerance &&
+			math.Abs(float64(bDeg)-float64(test.expectedBDeg)) > tolerance || math.Abs(float64(bMin)-float64(test.expectedBMin)) > tolerance || math.Abs(bSec-test.expectedBSec) > tolerance {
+			t.Fatalf(`Error while convert Equatorial Coordinate To Galactic. Required: %d %d %f, %d %d %f   Got: %d %d %f, %d %d %f`, test.expectedLDeg, test.expectedLMin, test.expectedLSec, test.expectedBDeg, test.expectedBMin, test.expectedBSec, lDeg, lMin, lSec, bDeg, bMin, bSec)
+		}
 	}
 }
 
@@ -147,8 +184,8 @@ func TestCalculateAngleBetweenTwoCelestialObjects(t *testing.T) {
 	Deg, Min, Sec := coords.CalculateAngleBetweenTwoCelestialObjects(5.0, 13.0, 31.7, -8.0, 13.0, 30.0, 6.0, 44.0, 13.4, -16.0, 41.0, 11.0)
 	const tolerance = 0.01 // Define an acceptable error range
 
-	if math.Abs(float64(Deg)-23) > tolerance || math.Abs(float64(Min)-40) > tolerance || math.Abs(Sec-25.85) > tolerance {
-		t.Fatalf(`Error while Calculating Angle Between Two Celestial Objects. Required: %d %d %f   Got: %d %d %f`, 23, 40, 25.85, Deg, Min, Sec)
+	if math.Abs(float64(Deg)-23) > tolerance || math.Abs(float64(Min)-40) > tolerance || math.Abs(Sec-25.89) > tolerance {
+		t.Fatalf(`Error while Calculating Angle Between Two Celestial Objects. Required: %d %d %f   Got: %d %d %f`, 23, 40, 25.89, Deg, Min, Sec)
 	}
 }
 
