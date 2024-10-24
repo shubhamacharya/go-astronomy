@@ -1,6 +1,7 @@
 package sun
 
 import (
+	"fmt"
 	"go-astronomy/internal/coords"
 	datetime "go-astronomy/internal/dateTime"
 	"go-astronomy/internal/macros"
@@ -15,7 +16,7 @@ func CalculatePositionOfSun(GDay float64, GMonth, GYear int, UTHrs, UTMins int, 
 	lambda = macros.CalculatePositionOfSunHelper(GDay, GMonth, GYear, UTHrs, UTMins, UTSec, epochDay, epochMonth, epochYear)
 	lambdaDeg, lambdaMin, lambdaSec := macros.ConvertDecimalDegToDegMinSec(lambda)
 	raHrs, raMin, raSec, decDeg, decMin, decSec = macros.ConvertEclipticCoordinatesToEquatorial(GDay, GMonth, GYear, lambdaDeg, lambdaMin, lambdaSec, 0, 0, 0, epochDay, epochMonth, epochYear)
-	// fmt.Printf("\nlambda : %d %d %f\nra : %d %d %f\ndec : %d %d %f\n", lambdaDeg, lambdaMin, lambdaSec, raHrs, raMin, raSec, decDeg, decMin, decSec)
+	fmt.Printf("\nlambda : %d %d %f\nra : %d %d %f\ndec : %d %d %f\n", lambdaDeg, lambdaMin, lambdaSec, raHrs, raMin, raSec, decDeg, decMin, decSec)
 	return raHrs, raMin, raSec, decDeg, decMin, decSec, lambda
 }
 
@@ -79,6 +80,7 @@ func CalculateCalculateSunTwilight(GDay float64, GMonth, GYear int, UTHrs, UTMin
 
 func CalculateTheEquationOfTime(GDay float64, GMonth, GYear int, UTHrs, UTMins int, UTSec, geoLongW, geoLatN, refractionInArcMin, daylightsavingHrs, daylightsavingMin, timeZone, epochDay float64, epochMonth, epochYear int) (eqHrs, eqMin int, eqSec float64) {
 	raHrs, raMin, raSec, _, _, _, _ := CalculatePositionOfSun(GDay, GMonth, GYear, UTHrs, UTMins, UTSec, epochDay, epochMonth, epochYear)
+	fmt.Println(datetime.ConvertHrsMinSecToDecimalHrs(raHrs, raMin, raSec, false, false))
 	raUTHrs, raUTMin, raUTSec := datetime.ConvertGreenwichSiderealTimeToUniversalTime(GDay, GMonth, GYear, raHrs, raMin, raSec)
 	eqHrs, eqMin, eqSec = datetime.ConvertDecimalHrsToHrsMinSec(datetime.ConvertHrsMinSecToDecimalHrs(raUTHrs, raUTMin, raUTSec, false, false) - 12)
 	return eqHrs, eqMin, eqSec

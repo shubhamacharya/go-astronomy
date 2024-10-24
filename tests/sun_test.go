@@ -74,7 +74,7 @@ func TestCalculateSunsRiseAndSet(t *testing.T) {
 }
 
 func TestCalculateCalculateSunTwilight(t *testing.T) {
-	riseTwilightHrs, riseTwilightMin, riseTwilightSec, setTwilightHrs, setTwilightMin, setTwilightSec := sun.CalculateCalculateSunTwilight(7.0, 9, 1979, 0, 0, 0.0, 0, 52.0, 34.0, 0, 0, 0.0, 1.5, 1, 2010)
+	riseTwilightHrs, riseTwilightMin, riseTwilightSec, setTwilightHrs, setTwilightMin, setTwilightSec := sun.CalculateCalculateSunTwilight(7.0, 9, 1979, 0, 0, 0.0, 0, 52.0, 34.0, 0, 0, 0.0, 0, 1, 2010)
 	const tolerance = 0.01 // Define an acceptable error range
 
 	if math.Abs(float64(riseTwilightHrs)-3.0) > tolerance || math.Abs(float64(riseTwilightMin)-12.0) > tolerance || math.Abs(riseTwilightSec-30.136076) > tolerance &&
@@ -84,7 +84,7 @@ func TestCalculateCalculateSunTwilight(t *testing.T) {
 }
 
 func TestCalculateTheEquationOfTime(t *testing.T) {
-	eqHrs, eqMin, eqSec := sun.CalculateTheEquationOfTime(27.0, 7, 2010, 0, 0, 0.0, 0, 52.0, 34.0, 0, 0, 0.0, 1.5, 1, 2010)
+	eqHrs, eqMin, eqSec := sun.CalculateTheEquationOfTime(27.5, 7, 2010, 12, 0, 0.0, 0, 52.0, 34.0, 0, 0, 0.0, 0, 1, 2010)
 	const tolerance = 0.01 // Define an acceptable error range
 
 	if math.Abs(float64(eqHrs)-0.0) > tolerance || math.Abs(float64(eqMin)-4.0) > tolerance || math.Abs(eqSec-30.541071) > tolerance {
