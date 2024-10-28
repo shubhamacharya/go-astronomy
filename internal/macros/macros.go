@@ -49,6 +49,20 @@ func CalculateEgWgAnde(GDay float64, GMonth, GYear int, UTHrs, UTMins int, UTSec
 
 	return Eg, Wg, e, r0, theta0
 }
+func CalculateL_E_V(Eg, Wg, e float64) (eccentricAnomaly, V, lambda0 float64) {
+	MRad := ConvertDegreesToRadiance(AdjustAngleRange(Eg-Wg, 0, 360))
+	eccentricAnomaly = ConvertRadianceToDegree(CalculateEccentricAnomaly(MRad, e))
+	V = ConvertRadianceToDegree(math.Atan(math.Sqrt((1+e)/(1-e))*math.Tan(ConvertDegreesToRadiance(eccentricAnomaly/2))) * 2)
+	if V < 0 {
+		V += 360
+	}
+
+	lambda0 = V + Wg
+	if lambda0 > 360 {
+		lambda0 -= 360
+	}
+	return eccentricAnomaly, V, lambda0
+}
 
 func DaysElapsedSinceEpoch(epochYear, targetYear int) float64 {
 	days := 0.0
@@ -85,6 +99,24 @@ func CalculatePositionOfSunHelper(GDay float64, GMonth, GYear, UTHrs, UTMins int
 	lambda := RoundToNDecimals((N + Ec + Eg), 6)
 	// fmt.Printf("\ndaysElapsedSinceStartOfYear : %v\ndaysElapsedSinceEpoch : %v\ndaysElapsedSinceEpochDifference : %v\nEg : %v\nWg : %v\ne : %v\nr0 : %v\ntheta : %v\nN : %v\nM : %v\nEc : %v\nlambda : %v\n", daysElapsedSinceStartOfYear, daysElapsedSinceEpoch, daysElapsedSinceStartOfYear+daysElapsedSinceEpoch, Eg, Wg, e, r0, theta, N, M, Ec, lambda)
 	return lambda
+}
+
+func CalculateN_M_V(planetValues map[string]interface{}, totalDays float64) (N, M, V float64) {
+	N = RoundToNDecimals(AdjustAngleRange((360/365.242191)*(totalDays/planetValues["Tp"].(float64)), 0, 360), 6)
+	M = RoundToNDecimals(N+planetValues["Long"].(float64)-planetValues["Peri"].(float64), 6)
+	V = AdjustAngleRange(RoundToNDecimals(M+((360/math.Pi)*planetValues["Ecc"].(float64)*math.Sin(ConvertDegreesToRadiance(M))), 6), 0, 360)
+
+	if V < 0 {
+		V += 360
+	}
+	return N, M, V
+}
+
+func CalculatePerturbationsInPlanetsOrbitHelper(planetValues map[string]interface{}, V, deltaL float64) (L, r, si float64) {
+	L = RoundToNDecimals(AdjustAngleRange(V+planetValues["Peri"].(float64), 0, 360)+deltaL, 6)
+	r = RoundToNDecimals((planetValues["Axis"].(float64)*(1-math.Pow(planetValues["Ecc"].(float64), 2)))/(1+(planetValues["Ecc"].(float64)*math.Cos(ConvertDegreesToRadiance(V)))), 6)
+	si = RoundToNDecimals(ConvertRadianceToDegree(math.Asin(math.Sin(ConvertDegreesToRadiance(L-planetValues["Node"].(float64)))*(math.Sin(ConvertDegreesToRadiance(planetValues["Incl"].(float64)))))), 6)
+	return L, r, si
 }
 
 func AdjustDate(day float64, month, year int) (float64, int, int) {

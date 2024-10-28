@@ -16,23 +16,13 @@ func CalculatePositionOfSun(GDay float64, GMonth, GYear int, UTHrs, UTMins int, 
 	lambda = macros.CalculatePositionOfSunHelper(GDay, GMonth, GYear, UTHrs, UTMins, UTSec, epochDay, epochMonth, epochYear)
 	lambdaDeg, lambdaMin, lambdaSec := macros.ConvertDecimalDegToDegMinSec(lambda)
 	raHrs, raMin, raSec, decDeg, decMin, decSec = macros.ConvertEclipticCoordinatesToEquatorial(GDay, GMonth, GYear, lambdaDeg, lambdaMin, lambdaSec, 0, 0, 0, epochDay, epochMonth, epochYear)
-	fmt.Printf("\nlambda : %d %d %f\nra : %d %d %f\ndec : %d %d %f\n", lambdaDeg, lambdaMin, lambdaSec, raHrs, raMin, raSec, decDeg, decMin, decSec)
+	// fmt.Printf("\nlambda : %d %d %f\nra : %d %d %f\ndec : %d %d %f\n", lambdaDeg, lambdaMin, lambdaSec, raHrs, raMin, raSec, decDeg, decMin, decSec)
 	return raHrs, raMin, raSec, decDeg, decMin, decSec, lambda
 }
 
 func CalculatePrecisePositionOfSun(GDay float64, GMonth, GYear int, UTHrs, UTMins int, UTSec float64, epochDay float64, epochMonth, epochYear int) (raHrs, raMins int, raSecs float64, decDeg, decMin int, decSec, lambda0 float64) {
 	Eg, Wg, e, _, _ := macros.CalculateEgWgAnde(GDay, GMonth, GYear, UTHrs, UTMins, UTSec, epochDay, epochMonth, epochYear)
-	MRad := macros.ConvertDegreesToRadiance(macros.AdjustAngleRange(Eg-Wg, 0, 360))
-	eccentricAnomaly := macros.ConvertRadianceToDegree(macros.CalculateEccentricAnomaly(MRad, e))
-	V := macros.ConvertRadianceToDegree(math.Atan(math.Sqrt((1+e)/(1-e))*math.Tan(macros.ConvertDegreesToRadiance(eccentricAnomaly/2))) * 2)
-	if V < 0 {
-		V += 360
-	}
-
-	lambda0 = V + Wg
-	if lambda0 > 360 {
-		lambda0 -= 360
-	}
+	_, _, lambda0 = macros.CalculateL_E_V(Eg, Wg, e)
 	lambda0Deg, lambda0Min, lambda0Sec := macros.ConvertDecimalDegToDegMinSec(lambda0)
 	raHrs, raMins, raSecs, decDeg, decMin, decSec = macros.ConvertEclipticCoordinatesToEquatorial(GDay, GMonth, GYear, lambda0Deg, lambda0Min, lambda0Sec, 0, 0, 0, epochDay, epochMonth, epochYear)
 	return raHrs, raMins, raSecs, decDeg, decMin, decSec, lambda0

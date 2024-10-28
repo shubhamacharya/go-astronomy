@@ -39,6 +39,33 @@ func TestCalculatePerturbationsInPlanetsOrbit(t *testing.T) {
 
 	if math.Abs(float64(raHrs)-11.0) > tolerance || math.Abs(float64(raMins)-10.0) > tolerance || math.Abs(raSecs-47.00) > tolerance &&
 		math.Abs(float64(decDeg)-6.0) > tolerance || math.Abs(float64(decMin)-24.0) > tolerance || math.Abs(decSec-12.00) > tolerance {
-		t.Fatalf(`Error while Calculating Approximate Position Of Planet Jupiter. Required: Rising = %d %d %f  Setting = %d %d %f   Got: Rising = %d %d %f  Setting = %d %d %f`, 11, 10, 47.00, 6, 24, 12.00, raHrs, raMins, raSecs, decDeg, decMin, decSec)
+		t.Fatalf(`Error while Calculatinge Perturbations In Planets Orbit for Jupiter. Required: Rising = %d %d %f  Setting = %d %d %f   Got: Rising = %d %d %f  Setting = %d %d %f`, 11, 10, 47.00, 6, 24, 12.00, raHrs, raMins, raSecs, decDeg, decMin, decSec)
+	}
+}
+
+func TestCalculatePlantesDistanceLightTravelAndAngularSize(t *testing.T) {
+	distance, timeMin, timeSec, diameter := planets.CalculatePlantesDistanceLightTravelAndAngularSize(22.0, 11, 2003, "Jupiter", 0, 1, 2010)
+	const tolerance = 0.01 // Define an acceptable error range
+
+	if math.Abs(float64(distance)-11.0) > tolerance || math.Abs(float64(timeMin)-10.0) > tolerance || math.Abs(timeSec-47.00) > tolerance || math.Abs(diameter-12.00) > tolerance {
+		t.Fatalf(`Error while Calculating Plantes Distance Light Travel And Angular Size Of Planet Jupiter. Required:  Distance = %v\t Light Travel Time : %v Min %v Sec\t Diameter = %v\n Got: Distance = %v\t Light Travel Time : %v Min %v Sec\t Diameter = %v\n`, 11, 10, 47.00, 6, distance, timeMin, timeSec, diameter)
+	}
+}
+
+func TestCalculatePhasesOfPlanets(t *testing.T) {
+	const tolerance = 0.01 // Define an acceptable error range
+	d, F := planets.CalculatePhasesOfPlanets(22.0, 11, 2003, "Jupiter", 0, 1, 2010)
+
+	if math.Abs(float64(d)-11.0) > tolerance || math.Abs(float64(F)-10.0) > tolerance {
+		t.Fatalf(`Error while Calculating Phases Of Planets. Required:  d = %v\t F : %v\n Got: d = %v\t F : %v\n`, 11, 10, d, F)
+	}
+}
+
+func TestCalculatePositionAngleOfBrightLimb(t *testing.T) {
+	const tolerance = 0.01 // Define an acceptable error range
+	d := planets.CalculatePositionAngleOfBrightLimb(22.0, 11, 2003, "Mercury", 0, 1, 2010)
+
+	if math.Abs(float64(d)-10.0) > tolerance {
+		t.Fatalf(`Error while Calculating Position Angle Of Bright Limb. Required: F : %v\n Got: F : %v\n`, 11, d)
 	}
 }
