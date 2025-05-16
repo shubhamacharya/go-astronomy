@@ -69,3 +69,12 @@ func TestCalculatePositionAngleOfBrightLimb(t *testing.T) {
 		t.Fatalf(`Error while Calculating Position Angle Of Bright Limb. Required: F : %v\n Got: F : %v\n`, 11, d)
 	}
 }
+
+func TestCalculateApparentBrightnessOfPlanet(t *testing.T) {
+	const tolerance = 0.01 // Define an acceptable error range
+	d := planets.CalculateApparentBrightnessOfPlanet(22.0, 11, 2003, "Mercury", 0, 1, 2010)
+
+	if math.Abs(float64(d)-10.0) > tolerance {
+		t.Fatalf(`Error while Calculating Apparent Brightness Of Planet. Required: F : %v\n Got: F : %v\n`, 11, d)
+	}
+}
