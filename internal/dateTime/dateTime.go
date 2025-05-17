@@ -133,170 +133,166 @@ func ConvertGreenwichDateToJulianDate(day, month, year float64, yearLabel YearLa
 	return jd
 }
 
-// func ConvertJulianDateToGreenwichDate(julianDate float64) (day float64, month, year int) {
-// 	// Adjust the Julian date to start the calculation
-// 	julianDate += 0.5
-// 	integerPart, fractionalPart := math.Modf(julianDate)
+func ConvertJulianDateToGreenwichDate(julianDate float64) (day float64, month, year int) {
+	// Adjust the Julian date to start the calculation
+	julianDate += 0.5
+	integerPart, fractionalPart := math.Modf(julianDate)
 
-// 	// Initialize variables
-// 	var correctionFactor, adjustedJulianDate float64
-// 	if integerPart > 2299160 {
-// 		correctionFactor = math.Trunc((integerPart - 1867216.25) / 36524.25)
-// 		adjustedJulianDate = integerPart + correctionFactor - math.Trunc(correctionFactor/4) + 1
-// 	} else {
-// 		adjustedJulianDate = integerPart
-// 	}
+	// Initialize variables
+	var correctionFactor, adjustedJulianDate float64
+	if integerPart > 2299160 {
+		correctionFactor = math.Trunc((integerPart - 1867216.25) / 36524.25)
+		adjustedJulianDate = integerPart + correctionFactor - math.Trunc(correctionFactor/4) + 1
+	} else {
+		adjustedJulianDate = integerPart
+	}
 
-// 	// Perform the conversion to the Greenwich date
-// 	calendarDate := adjustedJulianDate + 1524
-// 	yearEstimate := math.Trunc((calendarDate - 122.1) / 365.25)
-// 	dayOfYear := math.Trunc(365.25 * yearEstimate)
-// 	monthEstimate := math.Trunc((calendarDate - dayOfYear) / 30.6001)
+	// Perform the conversion to the Greenwich date
+	calendarDate := adjustedJulianDate + 1524
+	yearEstimate := math.Trunc((calendarDate - 122.1) / 365.25)
+	dayOfYear := math.Trunc(365.25 * yearEstimate)
+	monthEstimate := math.Trunc((calendarDate - dayOfYear) / 30.6001)
 
-// 	// Calculate day, month, and year
-// 	day = calendarDate - dayOfYear + fractionalPart - math.Trunc(30.6001*monthEstimate)
+	// Calculate day, month, and year
+	day = calendarDate - dayOfYear + fractionalPart - math.Trunc(30.6001*monthEstimate)
 
-// 	if monthEstimate < 13.5 {
-// 		month = int(monthEstimate - 1.0)
-// 	} else {
-// 		month = int(monthEstimate - 13)
-// 	}
+	if monthEstimate < 13.5 {
+		month = int(monthEstimate - 1.0)
+	} else {
+		month = int(monthEstimate - 13)
+	}
 
-// 	if float64(month) > 2.5 {
-// 		year = int(yearEstimate - 4716)
-// 	} else {
-// 		year = int(yearEstimate - 4715)
-// 	}
+	if float64(month) > 2.5 {
+		year = int(yearEstimate - 4716)
+	} else {
+		year = int(yearEstimate - 4715)
+	}
 
-// 	return day, month, year
-// }
+	return day, month, year
+}
 
-// func GetNameOfTheDayOfMonth(day, month, year float64) string {
-// 	// Convert the Greenwich date to a Julian Date Number
-// 	julianDate := ConvertGreenwichDateToJulianDate(day, month, year)
+func GetNameOfTheDayOfMonth(day, month, year float64, yearLabel YearLabel) string {
+	// Convert the Greenwich date to a Julian Date Number
+	julianDate := ConvertGreenwichDateToJulianDate(day, month, year, yearLabel)
 
-// 	// Calculate the day of the week (0 = Monday, 6 = Sunday)
-// 	dayOfWeek := int(math.Mod(julianDate+1.5, 7))
+	// Calculate the day of the week (0 = Monday, 6 = Sunday)
+	dayOfWeek := int(math.Mod(julianDate+1.5, 7))
 
-// 	// Return the corresponding name of the day of the week
-// 	return daysOfWeek[dayOfWeek]
-// }
+	// Return the corresponding name of the day of the week
+	return daysOfWeek[dayOfWeek]
+}
 
-// func ConvertHrsMinSecToDecimalHrs(Hrs int, min int, sec float64, is12HrClock bool, isPM bool) float64 {
-// 	// Convert seconds to a fractional part of a minute
-// 	secPart := sec / 60.0
+func ConvertHrsMinSecToDecimalHrs(Hrs int, min int, sec float64, is12HrClock bool, isPM bool) float64 {
+	// Convert seconds to a fractional part of a minute
+	secPart := sec / 60.0
 
-// 	// Convert minutes and the seconds part to a fractional part of an hour
-// 	minPart := (float64(min) + secPart) / 60.0
+	// Convert minutes and the seconds part to a fractional part of an hour
+	minPart := (float64(min) + secPart) / 60.0
 
-// 	// Calculate total hours
-// 	A := float64(Hrs) + minPart
+	// Calculate total hours
+	A := float64(Hrs) + minPart
 
-// 	// Adjust for 12-hour clock format
-// 	if is12HrClock {
-// 		// Handle the case for 12 AM and 12 PM specifically
-// 		if isPM {
-// 			if Hrs != 12 {
-// 				A += 12.0 // Add 12 hours for PM times, except for 12 PM itself
-// 			}
-// 		} else {
-// 			if Hrs == 12 {
-// 				A = minPart // 12 AM is 0 hours
-// 			}
-// 		}
-// 	}
-// 	factor := math.Pow(10, float64(6))
-// 	return math.Round(A*factor) / factor
-// }
+	// Adjust for 12-hour clock format
+	if is12HrClock {
+		// Handle the case for 12 AM and 12 PM specifically
+		if isPM {
+			if Hrs != 12 {
+				A += 12.0 // Add 12 hours for PM times, except for 12 PM itself
+			}
+		} else {
+			if Hrs == 12 {
+				A = minPart // 12 AM is 0 hours
+			}
+		}
+	}
+	factor := math.Pow(10, float64(6))
+	return math.Round(A*factor) / factor
+}
 
-// func ConvertDecimalHrsToHrsMinSec(decimalHours float64) (hours, minutes int, seconds float64) {
-// 	// Split decimal hours into the integer part (hours) and fractional part (fractionalHours)
-// 	hoursFloat, fractionalHours := math.Modf(decimalHours)
-// 	hours = int(hoursFloat)
+func ConvertDecimalHrsToHrsMinSec(decimalHours float64) (hours, minutes int, seconds float64) {
+	// Split decimal hours into the integer part (hours) and fractional part (fractionalHours)
+	hoursFloat, fractionalHours := math.Modf(decimalHours)
+	hours = int(hoursFloat)
 
-// 	// Convert fractional hours to minutes
-// 	minutesFloat, fractionalMinutes := math.Modf(fractionalHours * 60)
+	// Convert fractional hours to minutes
+	minutesFloat, fractionalMinutes := math.Modf(fractionalHours * 60)
 
-// 	// Convert fractional minutes to seconds
-// 	factor := math.Pow(10, float64(6))
-// 	seconds = math.Round((fractionalMinutes*60)*factor) / factor
+	// Convert fractional minutes to seconds
+	factor := math.Pow(10, float64(6))
+	seconds = math.Round((fractionalMinutes*60)*factor) / factor
 
-// 	if math.Round(seconds) == 60 {
-// 		seconds = 0
-// 		minutesFloat += 1
-// 	}
+	if math.Round(seconds) == 60 {
+		seconds = 0
+		minutesFloat += 1
+	}
 
-// 	if math.Round(minutesFloat) == 60 {
-// 		minutesFloat = 0
-// 		hours += 1
-// 	}
+	if math.Round(minutesFloat) == 60 {
+		minutesFloat = 0
+		hours += 1
+	}
 
-// 	minutes = int(minutesFloat)
-// 	return hours, minutes, seconds
-// }
+	minutes = int(minutesFloat)
+	return hours, minutes, seconds
+}
 
-// func ConvertLocalTimeToUniversalTime(day float64, month int, year int, hrs int, min int, sec float64, daylightsavingHrs int, daylightsavingMin int, zoneOffset float64) (UTDay float64, UTMonth, UTYear, UTHrs, UTMin int, UTSec, decimalTime float64) {
-// 	// Adjust for daylight saving time
-// 	hrs -= daylightsavingHrs
-// 	min -= daylightsavingMin
+func ConvertLocalTimeToUniversalTime(day, month, year float64, yearLabel YearLabel, hrs int, min int, sec float64, daylightsavingHrs int, daylightsavingMin int, zoneOffset float64) (UTDay float64, UTMonth, UTYear, UTHrs, UTMin int, UTSec, decimalTime float64) {
+	// Adjust for daylight saving time
+	hrs -= daylightsavingHrs
+	min -= daylightsavingMin
 
-// 	// Convert to decimal hours
-// 	decimalHrs := ConvertHrsMinSecToDecimalHrs(hrs, min, sec, false, false)
+	// Convert to decimal hours
+	decimalHrs := ConvertHrsMinSecToDecimalHrs(hrs, min, sec, false, false)
 
-// 	// Correct time zone adjustment by subtracting the zone offset
-// 	UT := decimalHrs - zoneOffset
+	// Correct time zone adjustment by subtracting the zone offset
+	UT := decimalHrs - zoneOffset
 
-// 	// Adjust the Greenwich calendar day based on the UT
-// 	Gday := (UT / 24) + day
+	// Adjust the Greenwich calendar day based on the UT
+	Gday := (UT / 24) + day
 
-// 	// Calculate Julian Date from Greenwich calendar day
-// 	julianDate := ConvertGreenwichDateToJulianDate(Gday, month, year)
+	// Calculate Julian Date from Greenwich calendar day
+	julianDate := ConvertGreenwichDateToJulianDate(Gday, month, year, yearLabel)
 
-// 	// Convert Julian Date back to Greenwich calendar date
-// 	UTDay, UTMonth, UTYear = ConvertJulianDateToGreenwichDate(julianDate)
+	// Convert Julian Date back to Greenwich calendar date
+	UTDay, UTMonth, UTYear = ConvertJulianDateToGreenwichDate(julianDate)
 
-// 	decimalUTTime := (Gday - math.Trunc(Gday)) * 24
+	decimalUTTime := (Gday - math.Trunc(Gday)) * 24
 
-// 	UTHrs, UTMin, UTSec = ConvertDecimalHrsToHrsMinSec(decimalUTTime)
+	UTHrs, UTMin, UTSec = ConvertDecimalHrsToHrsMinSec(decimalUTTime)
 
-// 	// Handle leap second case: if seconds are exactly 60.0, adjust it to 59.999999 without rolling over
-// 	if sec >= 60.0 {
-// 		UTSec = 59.999999
-// 	} else {
-// 		// Handle small floating-point precision issues
-// 		UTSec = math.Round(UTSec*1e6) / 1e6
-// 	}
+	// Handle leap second case: if seconds are exactly 60.0, adjust it to 59.999999 without rolling over
+	if sec >= 60.0 {
+		UTSec = 59.999999
+	} else {
+		// Handle small floating-point precision issues
+		UTSec = math.Round(UTSec*1e6) / 1e6
+	}
 
-// 	// Truncate UTDay to get the whole day number
-// 	UTDay = math.Trunc(UTDay)
+	// Truncate UTDay to get the whole day number
+	UTDay = math.Trunc(UTDay)
 
-// 	// Return the correct UT values
-// 	return UTDay, UTMonth, UTYear, UTHrs, UTMin, UTSec, decimalTime
-// }
+	// Return the correct UT values
+	return UTDay, UTMonth, UTYear, UTHrs, UTMin, UTSec, decimalTime
+}
 
-// func ConvertUniversalTimeToLocalTime(day float64, month int, year int, hrs int, min int, sec float64, daylightsavingHrs int, daylightsavingMin int, zoneOffset float64) (Gday float64, calMonth, calYear, GHrs, GMin int, GSec float64) {
-// 	factor := math.Pow(10, float64(6))
-// 	decimalHrs := ConvertHrsMinSecToDecimalHrs(hrs, min, sec, false, false) + zoneOffset + float64(daylightsavingHrs) + float64(daylightsavingMin)
-// 	decimalHrs = math.Round(decimalHrs*factor) / factor
+func ConvertUniversalTimeToLocalTime(day, month, year float64, yearLabel YearLabel, hrs int, min int, sec float64, daylightsavingHrs int, daylightsavingMin int, zoneOffset float64) (Gday float64, calMonth, calYear, GHrs, GMin int, GSec float64) {
+	factor := math.Pow(10, float64(6))
+	decimalHrs := ConvertHrsMinSecToDecimalHrs(hrs, min, sec, false, false) + zoneOffset + float64(daylightsavingHrs) + float64(daylightsavingMin)
+	decimalHrs = math.Round(decimalHrs*factor) / factor
 
-// 	julianDate := ConvertGreenwichDateToJulianDate(day, month, year) + (decimalHrs / 24)
-// 	julianDate = math.Round(julianDate*factor) / factor
+	julianDate := ConvertGreenwichDateToJulianDate(day, month, year, yearLabel) + (decimalHrs / 24)
+	julianDate = math.Round(julianDate*factor) / factor
 
-// 	calDay, calMonth, calYear := ConvertJulianDateToGreenwichDate(julianDate)
-// 	calDay = math.Round(calDay*factor) / factor
+	calDay, calMonth, calYear := ConvertJulianDateToGreenwichDate(julianDate)
+	calDay = math.Round(calDay*factor) / factor
 
-// 	Gday, GTime := math.Modf(calDay)
-// 	Gday = math.Round(Gday*factor) / factor
-// 	GTime = math.Round(GTime*factor) / factor
+	Gday, GTime := math.Modf(calDay)
+	Gday = math.Round(Gday*factor) / factor
+	GTime = math.Round(GTime*factor) / factor
 
-// 	// fmt.Printf("\ndecimalHrs : %v\nJulianDate : %v\n", decimalHrs, julianDate)
-// 	// fmt.Printf("\ncalDay : %v\ncalMonth : %v\ncalYear : %v\n", calDay, calMonth, calYear)
-// 	// fmt.Printf("\nGday : %v\nGTime : %v\n", calDay, GTime)
+	GHrs, GMin, GSec = ConvertDecimalHrsToHrsMinSec(GTime * 24)
 
-// 	GHrs, GMin, GSec = ConvertDecimalHrsToHrsMinSec(GTime * 24)
-
-// 	return Gday, calMonth, calYear, GHrs, GMin, GSec
-// }
+	return Gday, calMonth, calYear, GHrs, GMin, GSec
+}
 
 // func ConvertUniversalTimeToGreenwichSiderealTime(day float64, month int, year int, hrs int, min int, sec float64) (GSTHrs, GSTMin int, GSTSec, gst float64) {
 // 	julianDate := ConvertGreenwichDateToJulianDate(day, month, year)

@@ -4,7 +4,7 @@
 | 3 | Converting the date to the day number | CalculateDayNumber
 | 4 | Julian dates | ConvertGreenwichDateToJulianDate |
 | 5 | Julian date to the Greenwich calendar date | ConvertJulianDateToGreenwichDate |
-| 6 | Name of the day of the week | GetNameOfTheDayOfMonth | GetNameOfTheDayOfMonth |
+| 6 | Name of the day of the week | GetNameOfTheDayOfMonth |
 | 7 | Converting hours, minutes and seconds to decimal hours | ConvertHrsMinSecToDecimalHrs | 
 | 8 | Converting decimal hours to hours, minutes and seconds | ConvertDecimalHrsToHrsMinSec |
 | 9 | Converting local time to universal time | ConvertLocalTimeToUniversalTime |
