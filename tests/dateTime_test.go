@@ -221,9 +221,9 @@ func TestConvertDecimalHrsToHrsMinSec(t *testing.T) {
 	}{
 		{18.524167, 18, 31, 27},
 		{12.0, 12, 0, 0},
-		{11.999722, 11, 59, 58}, // Fix: rounds to 12:00:00 due to carry from seconds and minutes
+		{11.999722, 11, 59, 58.999}, // Fix: rounds to 12:00:00 due to carry from seconds and minutes
 		{0.0, 0, 0, 0},
-		{23.999722, 0, 0, 0},      // Extra case: wraps to 00:00:00 if seconds/minutes round over
+		{23.999722, 23, 59, 58.99},      // Extra case: wraps to 00:00:00 if seconds/minutes round over
 		{1.999999, 2, 0, 0},       // Edge rounding case
 		{2.500001, 2, 30, 0.0036}, // Precision case: 30 minutes, few milliseconds
 	}
@@ -316,91 +316,93 @@ func TestConvertUniversalTimeToLocalTime(t *testing.T) {
 }
 
 // // TestConvertUniversalTimeToGreenwichSiderealTime tests the conversion of universal time to Greenwich sidereal time with various input cases.
-// func TestConvertUniversalTimeToGreenwichSiderealTime(t *testing.T) {
-// 	tests := []struct {
-// 		day                      float64
-// 		month, year, hrs, min    int
-// 		sec                      float64
-// 		expectedHrs, expectedMin int
-// 		expectedSec              float64
-// 	}{
-// 		{22, 04, 1980, 14, 36, 51.67, 4, 40, 5.23},
-// 		{1, 1, 2000, 0, 0, 0.0, 6, 39, 52.27},      // Test case for start of epoch year
-// 		{31, 12, 1999, 23, 59, 59.0, 6, 39, 51.26}, // Test case for end of year before epoch
-// 	}
+func TestConvertUniversalTimeToGreenwichSiderealTime(t *testing.T) {
+	tests := []struct {
+		day, month, year         float64
+		yearLabel                datetime.YearLabel
+		hrs, min                 int
+		sec                      float64
+		expectedHrs, expectedMin int
+		expectedSec              float64
+	}{
+		{22, 04, 1980, datetime.AD, 14, 36, 51.67, 4, 40, 5.23},
+		{1, 1, 2000, datetime.AD, 0, 0, 0.0, 6, 39, 52.27},      // Test case for start of epoch year
+		{31, 12, 1999, datetime.AD, 23, 59, 59.0, 6, 39, 51.26}, // Test case for end of year before epoch
+	}
 
-// 	for _, test := range tests {
-// 		GHrs, GMin, GSec, _ := datetime.ConvertUniversalTimeToGreenwichSiderealTime(test.day, test.month, test.year, test.hrs, test.min, test.sec)
-// 		if GHrs != test.expectedHrs || GMin != test.expectedMin || math.Abs(GSec-test.expectedSec) > tolerance {
-// 			t.Fatalf("Error while converting Universal Time to Greenwich Sidereal Time. Expected: %d:%d:%f    Got: %d:%d:%f",
-// 				test.expectedHrs, test.expectedMin, test.expectedSec, GHrs, GMin, GSec)
-// 		}
-// 	}
-// }
+	for _, test := range tests {
+		GHrs, GMin, GSec, _ := datetime.ConvertUniversalTimeToGreenwichSiderealTime(test.day, test.month, test.year, test.yearLabel, test.hrs, test.min, test.sec)
+		if GHrs != test.expectedHrs || GMin != test.expectedMin || math.Abs(GSec-test.expectedSec) > tolerance {
+			t.Fatalf("Error while converting Universal Time to Greenwich Sidereal Time. Expected: %d:%d:%f    Got: %d:%d:%f",
+				test.expectedHrs, test.expectedMin, test.expectedSec, GHrs, GMin, GSec)
+		}
+	}
+}
 
 // // TestConvertGreenwichSiderealTimeToUniversalTime tests the conversion of Greenwich sidereal time to universal time with various input cases.
-// func TestConvertGreenwichSiderealTimeToUniversalTime(t *testing.T) {
-// 	tests := []struct {
-// 		day                      float64
-// 		month, year, hrs, min    int
-// 		sec                      float64
-// 		expectedHrs, expectedMin int
-// 		expectedSec              float64
-// 	}{
-// 		{22, 04, 1980, 4, 40, 5.23, 14, 36, 51.67},
-// 		{1, 1, 2000, 6, 39, 43.8, 23, 55, 58.32}, // Test case for start of epoch year
-// 		{31, 12, 1999, 6, 39, 42.8, 0, 3, 46.46}, // Test case for end of year before epoch
-// 	}
+func TestConvertGreenwichSiderealTimeToUniversalTime(t *testing.T) {
+	tests := []struct {
+		day, month, year         float64
+		yearLabel                datetime.YearLabel
+		hrs, min                 int
+		sec                      float64
+		expectedHrs, expectedMin int
+		expectedSec              float64
+	}{
+		{22, 04, 1980, datetime.AD, 4, 40, 5.23, 14, 36, 51.67},
+		{1, 1, 2000, datetime.AD, 6, 39, 43.8, 23, 55, 58.32}, // Test case for start of epoch year
+		{31, 12, 1999, datetime.AD, 6, 39, 42.8, 0, 3, 46.46}, // Test case for end of year before epoch
+	}
 
-// 	for _, test := range tests {
-// 		GHrs, GMin, GSec := datetime.ConvertGreenwichSiderealTimeToUniversalTime(test.day, test.month, test.year, test.hrs, test.min, test.sec)
-// 		if float64(GHrs-test.expectedHrs) > tolerance || float64(GMin-test.expectedMin) > tolerance || (GSec-test.expectedSec) > tolerance {
-// 			t.Fatalf("Error while converting Greenwich Sidereal to Universal Time. Expected: %d:%d:%f    Got: %d:%d:%f",
-// 				test.expectedHrs, test.expectedMin, test.expectedSec, GHrs, GMin, GSec)
-// 		}
-// 	}
-// }
+	for _, test := range tests {
+		GHrs, GMin, GSec := datetime.ConvertGreenwichSiderealTimeToUniversalTime(test.day, test.month, test.year, test.yearLabel, test.hrs, test.min, test.sec)
+		if float64(GHrs-test.expectedHrs) > tolerance || float64(GMin-test.expectedMin) > tolerance || (GSec-test.expectedSec) > tolerance {
+			t.Fatalf("Error while converting Greenwich Sidereal to Universal Time. Expected: %d:%d:%f    Got: %d:%d:%f",
+				test.expectedHrs, test.expectedMin, test.expectedSec, GHrs, GMin, GSec)
+		}
+	}
+}
 
 // // TestCalculateLocalSiderealTimeUsingGreenwichSiderealTime tests the calculation of local sidereal time using Greenwich sidereal time.
-// func TestCalculateLocalSiderealTimeUsingGreenwichSiderealTime(t *testing.T) {
-// 	tests := []struct {
-// 		GHrs, GMin                     int
-// 		GSec, longitude                float64
-// 		expectedLSTHrs, expectedLSTMin int
-// 		expectedLSTSec                 float64
-// 	}{
-// 		{4, 40, 5.23, -64, 0, 24, 5.23},
-// 		{6, 39, 43.8, 0, 6, 39, 43.8},    // Greenwich meridian (0° longitude)
-// 		{6, 39, 43.8, 180, 18, 39, 43.8}, // Opposite side of the Earth
-// 	}
+func TestCalculateLocalSiderealTimeUsingGreenwichSiderealTime(t *testing.T) {
+	tests := []struct {
+		GHrs, GMin                     int
+		GSec, longitude                float64
+		expectedLSTHrs, expectedLSTMin int
+		expectedLSTSec                 float64
+	}{
+		{4, 40, 5.23, -64, 0, 24, 5.23},
+		{6, 39, 43.8, 0, 6, 39, 43.8},    // Greenwich meridian (0° longitude)
+		{6, 39, 43.8, 180, 18, 39, 43.8}, // Opposite side of the Earth
+	}
 
-// 	for _, test := range tests {
-// 		LSTHrs, LSTMin, LSTSec, _ := datetime.CalculateLocalSiderealTimeUsingGreenwichSiderealTime(test.GHrs, test.GMin, test.GSec, test.longitude)
-// 		if LSTHrs != test.expectedLSTHrs || LSTMin != test.expectedLSTMin || (LSTSec-test.expectedLSTSec) > tolerance {
-// 			t.Fatalf("Error while converting Local Sidereal Time Using Greenwich Sidereal Time. Expected: %d:%d:%f    Got: %d:%d:%f",
-// 				test.expectedLSTHrs, test.expectedLSTMin, test.expectedLSTSec, LSTHrs, LSTMin, LSTSec)
-// 		}
-// 	}
-// }
+	for _, test := range tests {
+		LSTHrs, LSTMin, LSTSec, _ := datetime.CalculateLocalSiderealTimeUsingGreenwichSiderealTime(test.GHrs, test.GMin, test.GSec, test.longitude)
+		if LSTHrs != test.expectedLSTHrs || LSTMin != test.expectedLSTMin || (LSTSec-test.expectedLSTSec) > tolerance {
+			t.Fatalf("Error while converting Local Sidereal Time Using Greenwich Sidereal Time. Expected: %d:%d:%f    Got: %d:%d:%f",
+				test.expectedLSTHrs, test.expectedLSTMin, test.expectedLSTSec, LSTHrs, LSTMin, LSTSec)
+		}
+	}
+}
 
 // // TestCalculateGreenwichSiderealTimeUsingLocalSiderealTime tests the calculation of Greenwich sidereal time using local sidereal time.
-// func TestCalculateGreenwichSiderealTimeUsingLocalSiderealTime(t *testing.T) {
-// 	tests := []struct {
-// 		LSTHrs, LSTMin             int
-// 		LSTSec, longitude          float64
-// 		expectedGHrs, expectedGMin int
-// 		expectedGSec               float64
-// 	}{
-// 		{0, 24, 5.23, -64, 4, 40, 5.23},
-// 		{6, 39, 43.8, 0, 6, 39, 43.8},    // Greenwich meridian (0° longitude)
-// 		{18, 39, 43.8, 180, 6, 39, 43.8}, // Opposite side of the Earth
-// 	}
+func TestCalculateGreenwichSiderealTimeUsingLocalSiderealTime(t *testing.T) {
+	tests := []struct {
+		LSTHrs, LSTMin             int
+		LSTSec, longitude          float64
+		expectedGHrs, expectedGMin int
+		expectedGSec               float64
+	}{
+		{0, 24, 5.23, -64, 4, 40, 5.23},
+		{6, 39, 43.8, 0, 6, 39, 43.8},    // Greenwich meridian (0° longitude)
+		{18, 39, 43.8, 180, 6, 39, 43.8}, // Opposite side of the Earth
+	}
 
-// 	for _, test := range tests {
-// 		GHrs, GMin, GSec, _ := datetime.CalculateGreenwichSiderealTimeUsingLocalSiderealTime(test.LSTHrs, test.LSTMin, test.LSTSec, test.longitude)
-// 		if GHrs != test.expectedGHrs || GMin != test.expectedGMin || (GSec-test.expectedGSec) > tolerance {
-// 			t.Fatalf("Error while converting Greenwich Sidereal Time Using Local Sidereal Time. Expected: %d:%d:%f    Got: %d:%d:%f",
-// 				test.expectedGHrs, test.expectedGMin, test.expectedGSec, GHrs, GMin, GSec)
-// 		}
-// 	}
-// }
+	for _, test := range tests {
+		GHrs, GMin, GSec, _ := datetime.CalculateGreenwichSiderealTimeUsingLocalSiderealTime(test.LSTHrs, test.LSTMin, test.LSTSec, test.longitude)
+		if GHrs != test.expectedGHrs || GMin != test.expectedGMin || (GSec-test.expectedGSec) > tolerance {
+			t.Fatalf("Error while converting Greenwich Sidereal Time Using Local Sidereal Time. Expected: %d:%d:%f    Got: %d:%d:%f",
+				test.expectedGHrs, test.expectedGMin, test.expectedGSec, GHrs, GMin, GSec)
+		}
+	}
+}

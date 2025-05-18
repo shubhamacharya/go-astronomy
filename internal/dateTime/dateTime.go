@@ -294,108 +294,108 @@ func ConvertUniversalTimeToLocalTime(day, month, year float64, yearLabel YearLab
 	return Gday, calMonth, calYear, GHrs, GMin, GSec
 }
 
-// func ConvertUniversalTimeToGreenwichSiderealTime(day float64, month int, year int, hrs int, min int, sec float64) (GSTHrs, GSTMin int, GSTSec, gst float64) {
-// 	julianDate := ConvertGreenwichDateToJulianDate(day, month, year)
-// 	elapsedDays := julianDate - 2451545.0
-// 	centuriesSinceJ2000 := elapsedDays / 36525.0
-// 	gstAtZeroUT := 6.697374558 + (2400.051336 * centuriesSinceJ2000) + (0.000025862 * math.Pow(centuriesSinceJ2000, 2))
+func ConvertUniversalTimeToGreenwichSiderealTime(day, month, year float64, yearLabel YearLabel, hrs int, min int, sec float64) (GSTHrs, GSTMin int, GSTSec, gst float64) {
+	julianDate := ConvertGreenwichDateToJulianDate(day, month, year, yearLabel)
+	elapsedDays := julianDate - 2451545.0
+	centuriesSinceJ2000 := elapsedDays / 36525.0
+	gstAtZeroUT := 6.697374558 + (2400.051336 * centuriesSinceJ2000) + (0.000025862 * math.Pow(centuriesSinceJ2000, 2))
 
-// 	// Normalize GST to the range [0, 24) hours
-// 	for gstAtZeroUT < 0 {
-// 		gstAtZeroUT += 24
-// 	}
-// 	for gstAtZeroUT >= 24 {
-// 		gstAtZeroUT -= 24
-// 	}
+	// Normalize GST to the range [0, 24) hours
+	for gstAtZeroUT < 0 {
+		gstAtZeroUT += 24
+	}
+	for gstAtZeroUT >= 24 {
+		gstAtZeroUT -= 24
+	}
 
-// 	utInDecimalHours := ConvertHrsMinSecToDecimalHrs(hrs, min, sec, false, false) * 1.002737909
-// 	gst = gstAtZeroUT + utInDecimalHours
+	utInDecimalHours := ConvertHrsMinSecToDecimalHrs(hrs, min, sec, false, false) * 1.002737909
+	gst = gstAtZeroUT + utInDecimalHours
 
-// 	// Normalize GST to the range [0, 24) hours again after adding UT
-// 	for gst < 0 {
-// 		gst += 24
-// 	}
-// 	for gst >= 24 {
-// 		gst -= 24
-// 	}
+	// Normalize GST to the range [0, 24) hours again after adding UT
+	for gst < 0 {
+		gst += 24
+	}
+	for gst >= 24 {
+		gst -= 24
+	}
 
-// 	GSTHrs, GSTMin, GSTSec = ConvertDecimalHrsToHrsMinSec(gst)
+	GSTHrs, GSTMin, GSTSec = ConvertDecimalHrsToHrsMinSec(gst)
 
-// 	return GSTHrs, GSTMin, GSTSec, gst
-// }
+	return GSTHrs, GSTMin, GSTSec, gst
+}
 
-// func ConvertGreenwichSiderealTimeToUniversalTime(day float64, month int, year int, hrs int, min int, sec float64) (UTHrs, UTMin int, UTSec float64) {
-// 	julianDate := ConvertGreenwichDateToJulianDate(day, month, year)
-// 	centuriesSinceJ2000 := ((julianDate - 2451545.0) / 36525.0)
-// 	factor := math.Pow(10, float64(6))
-// 	centuriesSinceJ2000 = math.Round(centuriesSinceJ2000*factor) / factor
-// 	gstAtZeroUT := 6.697374558 + (2400.051336 * centuriesSinceJ2000) + (0.000025862 * math.Pow(centuriesSinceJ2000, 2))
-// 	gstAtZeroUT = math.Round(gstAtZeroUT*factor) / factor
+func ConvertGreenwichSiderealTimeToUniversalTime(day, month, year float64, yearLabel YearLabel, hrs int, min int, sec float64) (UTHrs, UTMin int, UTSec float64) {
+	julianDate := ConvertGreenwichDateToJulianDate(day, month, year, yearLabel)
+	centuriesSinceJ2000 := ((julianDate - 2451545.0) / 36525.0)
+	factor := math.Pow(10, float64(6))
+	centuriesSinceJ2000 = math.Round(centuriesSinceJ2000*factor) / factor
+	gstAtZeroUT := 6.697374558 + (2400.051336 * centuriesSinceJ2000) + (0.000025862 * math.Pow(centuriesSinceJ2000, 2))
+	gstAtZeroUT = math.Round(gstAtZeroUT*factor) / factor
 
-// 	// Normalize GST to the range [0, 24) hours
-// 	for gstAtZeroUT < 0 {
-// 		gstAtZeroUT += 24
-// 	}
-// 	for gstAtZeroUT >= 24 {
-// 		gstAtZeroUT -= 24
-// 	}
+	// Normalize GST to the range [0, 24) hours
+	for gstAtZeroUT < 0 {
+		gstAtZeroUT += 24
+	}
+	for gstAtZeroUT >= 24 {
+		gstAtZeroUT -= 24
+	}
 
-// 	gstInDecimalHours := ConvertHrsMinSecToDecimalHrs(hrs, min, sec, false, false)
-// 	utInDecimalHours := gstInDecimalHours - gstAtZeroUT
+	gstInDecimalHours := ConvertHrsMinSecToDecimalHrs(hrs, min, sec, false, false)
+	utInDecimalHours := gstInDecimalHours - gstAtZeroUT
 
-// 	// Normalize UT to the range [0, 24) hours
-// 	for utInDecimalHours < 0 {
-// 		utInDecimalHours += 24
-// 	}
-// 	for utInDecimalHours >= 24 {
-// 		utInDecimalHours -= 24
-// 	}
+	// Normalize UT to the range [0, 24) hours
+	for utInDecimalHours < 0 {
+		utInDecimalHours += 24
+	}
+	for utInDecimalHours >= 24 {
+		utInDecimalHours -= 24
+	}
 
-// 	utInDecimalHours *= 0.9972695663
+	utInDecimalHours *= 0.9972695663
 
-// 	UTHrs, UTMin, UTSec = ConvertDecimalHrsToHrsMinSec(utInDecimalHours)
+	UTHrs, UTMin, UTSec = ConvertDecimalHrsToHrsMinSec(utInDecimalHours)
 
-// 	return UTHrs, UTMin, UTSec
-// }
+	return UTHrs, UTMin, UTSec
+}
 
-// func CalculateLocalSiderealTimeUsingGreenwichSiderealTime(hours, minutes int, seconds, geoLongitude float64) (LSTHours, LSTMinutes int, LSTSeconds, decimalLST float64) {
-// 	// Convert Greenwich Sidereal Time to decimal hours
-// 	decimalGST := ConvertHrsMinSecToDecimalHrs(hours, minutes, seconds, false, false)
+func CalculateLocalSiderealTimeUsingGreenwichSiderealTime(hours, minutes int, seconds, geoLongitude float64) (LSTHours, LSTMinutes int, LSTSeconds, decimalLST float64) {
+	// Convert Greenwich Sidereal Time to decimal hours
+	decimalGST := ConvertHrsMinSecToDecimalHrs(hours, minutes, seconds, false, false)
 
-// 	// Adjust for geographical longitude (in degrees)
-// 	decimalLST = decimalGST + (geoLongitude / 15)
+	// Adjust for geographical longitude (in degrees)
+	decimalLST = decimalGST + (geoLongitude / 15)
 
-// 	// Normalize the Local Sidereal Time to the range [0, 24) hours
-// 	for decimalLST < 0 {
-// 		decimalLST += 24
-// 	}
-// 	for decimalLST >= 24 {
-// 		decimalLST -= 24
-// 	}
+	// Normalize the Local Sidereal Time to the range [0, 24) hours
+	for decimalLST < 0 {
+		decimalLST += 24
+	}
+	for decimalLST >= 24 {
+		decimalLST -= 24
+	}
 
-// 	// Convert decimal Local Sidereal Time back to hours, minutes, and seconds
-// 	LSTHours, LSTMinutes, LSTSeconds = ConvertDecimalHrsToHrsMinSec(decimalLST)
+	// Convert decimal Local Sidereal Time back to hours, minutes, and seconds
+	LSTHours, LSTMinutes, LSTSeconds = ConvertDecimalHrsToHrsMinSec(decimalLST)
 
-// 	return LSTHours, LSTMinutes, LSTSeconds, decimalLST
-// }
+	return LSTHours, LSTMinutes, LSTSeconds, decimalLST
+}
 
-// func CalculateGreenwichSiderealTimeUsingLocalSiderealTime(hours, minutes int, seconds, geoLongitude float64) (GSTHours, GSTMinutes int, GSTSeconds, decimalGST float64) {
-// 	// Convert Local Sidereal Time to decimal hours
-// 	decimalLST := ConvertHrsMinSecToDecimalHrs(hours, minutes, seconds, false, false)
+func CalculateGreenwichSiderealTimeUsingLocalSiderealTime(hours, minutes int, seconds, geoLongitude float64) (GSTHours, GSTMinutes int, GSTSeconds, decimalGST float64) {
+	// Convert Local Sidereal Time to decimal hours
+	decimalLST := ConvertHrsMinSecToDecimalHrs(hours, minutes, seconds, false, false)
 
-// 	// Adjust for geographical longitude (in degrees)
-// 	decimalGST = decimalLST - (geoLongitude / 15)
+	// Adjust for geographical longitude (in degrees)
+	decimalGST = decimalLST - (geoLongitude / 15)
 
-// 	// Normalize the Greenwich Sidereal Time to the range [0, 24) hours
-// 	for decimalGST < 0 {
-// 		decimalGST += 24
-// 	}
-// 	for decimalGST >= 24 {
-// 		decimalGST -= 24
-// 	}
+	// Normalize the Greenwich Sidereal Time to the range [0, 24) hours
+	for decimalGST < 0 {
+		decimalGST += 24
+	}
+	for decimalGST >= 24 {
+		decimalGST -= 24
+	}
 
-// 	// Convert decimal Greenwich Sidereal Time back to hours, minutes, and seconds
-// 	GSTHours, GSTMinutes, GSTSeconds = ConvertDecimalHrsToHrsMinSec(decimalGST)
+	// Convert decimal Greenwich Sidereal Time back to hours, minutes, and seconds
+	GSTHours, GSTMinutes, GSTSeconds = ConvertDecimalHrsToHrsMinSec(decimalGST)
 
-// 	return GSTHours, GSTMinutes, GSTSeconds, decimalGST
-// }
+	return GSTHours, GSTMinutes, GSTSeconds, decimalGST
+}

@@ -13,6 +13,9 @@
 | 13 | Converting  Greenwich sideral time to universal time | ConvertGreenwichSiderealTimeToUniversalTime |
 | 14 | Calculate  Local sideral time using Greenwich sideral time | CalculateLocalSiderealTimeUsingGreenwichSideralTime |
 | 15 | Calculate Greenwich sideral time using Local sideral time  | CalculateGreenwichSideralTimeUsingLocalSiderealTime |
+---
+# Coordinates
+---
 | 21 | Converting between decimal degrees and degrees, minutes and seconds | ConvertDecimalDegToDegMinSec |
 | 21 | Converting between degrees, minutes and seconds and decimal degrees | ConvertDegMinSecToDecimalDeg |
 | 22 | Convert decimal hours to decimal degrees | ConvertDecimalHrsToDecimalDegress |
