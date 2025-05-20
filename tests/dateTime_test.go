@@ -107,10 +107,8 @@ func TestConvertToJulianDate(t *testing.T) {
 func TestConvertToGreenwichDate(t *testing.T) {
 	epsilon := 0.000001
 	tests := []struct {
-		julianDate    float64
-		expectedDay   float64
-		expectedMonth int
-		expectedYear  int
+		julianDate                               float64
+		expectedDay, expectedMonth, expectedYear float64
 	}{
 
 		// ✅ Regular Dates
@@ -161,11 +159,9 @@ func TestConvertToGreenwichDate(t *testing.T) {
 // // TestGetNameOfTheDayOfMonth tests the retrieval of the weekday name for various dates.
 func TestGetNameOfTheDayOfMonth(t *testing.T) {
 	tests := []struct {
-		day             float64
-		month           float64
-		year            float64
-		yearLabel       datetime.YearLabel
-		expectedDayName string
+		day, month, year float64
+		yearLabel        datetime.YearLabel
+		expectedDayName  string
 	}{
 		{19.0, 6, 2009, datetime.AD, "Friday"},
 		{1.0, 1, 2000, datetime.AD, "Saturday"},
@@ -184,12 +180,10 @@ func TestGetNameOfTheDayOfMonth(t *testing.T) {
 // // TestConvertHrsMinSecToDecimalHrs tests the conversion of time to decimal hours with various cases.
 func TestConvertHrsMinSecToDecimalHrs(t *testing.T) {
 	tests := []struct {
-		hrs         int
-		min         int
-		sec         float64
-		is12HrClock bool
-		isPM        bool
-		expectedOpt float64
+		hrs, min, sec float64
+		is12HrClock   bool
+		isPM          bool
+		expectedOpt   float64
 	}{
 		{6, 31, 27.0, true, true, 18.524167},    // 6:31:27 PM -> 18.524167
 		{12, 0, 0.0, true, true, 12.0},          // 12:00:00 PM -> 12.0
@@ -223,9 +217,9 @@ func TestConvertDecimalHrsToHrsMinSec(t *testing.T) {
 		{12.0, 12, 0, 0},
 		{11.999722, 11, 59, 58.999}, // Fix: rounds to 12:00:00 due to carry from seconds and minutes
 		{0.0, 0, 0, 0},
-		{23.999722, 23, 59, 58.99},      // Extra case: wraps to 00:00:00 if seconds/minutes round over
-		{1.999999, 2, 0, 0},       // Edge rounding case
-		{2.500001, 2, 30, 0.0036}, // Precision case: 30 minutes, few milliseconds
+		{23.999722, 23, 59, 58.99}, // Extra case: wraps to 00:00:00 if seconds/minutes round over
+		{1.999999, 2, 0, 0},        // Edge rounding case
+		{2.500001, 2, 30, 0.0036},  // Precision case: 30 minutes, few milliseconds
 	}
 
 	const epsilon = 0.01
@@ -246,14 +240,12 @@ func TestConvertDecimalHrsToHrsMinSec(t *testing.T) {
 func TestConvertLocalTimeToUniversalTime(t *testing.T) {
 	tolerance := 0.0001
 	tests := []struct {
-		day, month, year                                      float64
-		yearLabel                                             datetime.YearLabel
-		hrs, min                                              int
-		sec                                                   float64
-		daylightSavingHrs, daylightSavingMin                  int
-		timeZoneOffsetHrs, expectedDay                        float64
-		expectedMonth, expectedYear, expectedHrs, expectedMin int
-		expectedSec                                           float64
+		day, month, year                                                   float64
+		yearLabel                                                          datetime.YearLabel
+		hrs, min, sec                                                      float64
+		daylightSavingHrs, daylightSavingMin                               float64
+		timeZoneOffsetHrs, expectedDay                                     float64
+		expectedMonth, expectedYear, expectedHrs, expectedMin, expectedSec float64
 	}{
 		// Local time: 3:37 on July 1, 2013, DST = 1 hr, TimeZoneOffset = +4 → UT = 22:37 on June 30
 		{1, 7, 2013, datetime.AD, 3, 37, 0.0, 1, 0, 4.0, 30, 6, 2013, 22, 37, 0.0012},
@@ -290,15 +282,12 @@ func TestConvertLocalTimeToUniversalTime(t *testing.T) {
 // // TestConvertUniversalTimeToLocalTime tests the conversion of universal time to local time with various input cases.
 func TestConvertUniversalTimeToLocalTime(t *testing.T) {
 	tests := []struct {
-		day, month, year                                      float64
-		yearLabel                                             datetime.YearLabel
-		hrs, min                                              int
-		sec                                                   float64
-		daylightSavingHrs, daylightSavingMin                  int
-		timeZoneOffsetHrs                                     float64
-		expectedDay                                           float64
-		expectedMonth, expectedYear, expectedHrs, expectedMin int
-		expectedSec                                           float64
+		day, month, year                                                   float64
+		yearLabel                                                          datetime.YearLabel
+		hrs, min, sec                                                      float64
+		daylightSavingHrs, daylightSavingMin, timeZoneOffsetHrs            float64
+		expectedDay                                                        float64
+		expectedMonth, expectedYear, expectedHrs, expectedMin, expectedSec float64
 	}{
 		{30.0, 06, 2013, datetime.AD, 22, 37, 0.0, 0, 0, 1, 30.0, 6, 2013, 23, 37, 0.0},
 		{31.0, 12, 1999, datetime.AD, 21, 0, 0.0, 0, 0, 2, 31.0, 12, 1999, 23, 0, 0.0},
@@ -318,12 +307,10 @@ func TestConvertUniversalTimeToLocalTime(t *testing.T) {
 // // TestConvertUniversalTimeToGreenwichSiderealTime tests the conversion of universal time to Greenwich sidereal time with various input cases.
 func TestConvertUniversalTimeToGreenwichSiderealTime(t *testing.T) {
 	tests := []struct {
-		day, month, year         float64
-		yearLabel                datetime.YearLabel
-		hrs, min                 int
-		sec                      float64
-		expectedHrs, expectedMin int
-		expectedSec              float64
+		day, month, year                      float64
+		yearLabel                             datetime.YearLabel
+		hrs, min, sec                         float64
+		expectedHrs, expectedMin, expectedSec float64
 	}{
 		{22, 04, 1980, datetime.AD, 14, 36, 51.67, 4, 40, 5.23},
 		{1, 1, 2000, datetime.AD, 0, 0, 0.0, 6, 39, 52.27},      // Test case for start of epoch year
@@ -342,12 +329,10 @@ func TestConvertUniversalTimeToGreenwichSiderealTime(t *testing.T) {
 // // TestConvertGreenwichSiderealTimeToUniversalTime tests the conversion of Greenwich sidereal time to universal time with various input cases.
 func TestConvertGreenwichSiderealTimeToUniversalTime(t *testing.T) {
 	tests := []struct {
-		day, month, year         float64
-		yearLabel                datetime.YearLabel
-		hrs, min                 int
-		sec                      float64
-		expectedHrs, expectedMin int
-		expectedSec              float64
+		day, month, year                      float64
+		yearLabel                             datetime.YearLabel
+		hrs, min, sec                         float64
+		expectedHrs, expectedMin, expectedSec float64
 	}{
 		{22, 04, 1980, datetime.AD, 4, 40, 5.23, 14, 36, 51.67},
 		{1, 1, 2000, datetime.AD, 6, 39, 43.8, 23, 55, 58.32}, // Test case for start of epoch year
@@ -366,10 +351,8 @@ func TestConvertGreenwichSiderealTimeToUniversalTime(t *testing.T) {
 // // TestCalculateLocalSiderealTimeUsingGreenwichSiderealTime tests the calculation of local sidereal time using Greenwich sidereal time.
 func TestCalculateLocalSiderealTimeUsingGreenwichSiderealTime(t *testing.T) {
 	tests := []struct {
-		GHrs, GMin                     int
-		GSec, longitude                float64
-		expectedLSTHrs, expectedLSTMin int
-		expectedLSTSec                 float64
+		GHrs, GMin, GSec, longitude                    float64
+		expectedLSTHrs, expectedLSTMin, expectedLSTSec float64
 	}{
 		{4, 40, 5.23, -64, 0, 24, 5.23},
 		{6, 39, 43.8, 0, 6, 39, 43.8},    // Greenwich meridian (0° longitude)
@@ -388,10 +371,8 @@ func TestCalculateLocalSiderealTimeUsingGreenwichSiderealTime(t *testing.T) {
 // // TestCalculateGreenwichSiderealTimeUsingLocalSiderealTime tests the calculation of Greenwich sidereal time using local sidereal time.
 func TestCalculateGreenwichSiderealTimeUsingLocalSiderealTime(t *testing.T) {
 	tests := []struct {
-		LSTHrs, LSTMin             int
-		LSTSec, longitude          float64
-		expectedGHrs, expectedGMin int
-		expectedGSec               float64
+		LSTHrs, LSTMin, LSTSec, longitude        float64
+		expectedGHrs, expectedGMin, expectedGSec float64
 	}{
 		{0, 24, 5.23, -64, 4, 40, 5.23},
 		{6, 39, 43.8, 0, 6, 39, 43.8},    // Greenwich meridian (0° longitude)

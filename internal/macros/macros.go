@@ -33,9 +33,9 @@ func AdjustAngleRange(angle float64, lowestVal, highestVal int) float64 {
 	return angle
 }
 
-func CalculateEgWgAnde(GDay float64, GMonth, GYear int, UTHrs, UTMins int, UTSec float64, epochDay float64, epochMonth, epochYear int) (Eg, Wg, e, r0, theta0 float64) {
-	julianDate := datetime.ConvertGreenwichDateToJulianDate(GDay, GMonth, GYear)
-	julianDateEpoch := RoundToNDecimals(datetime.ConvertGreenwichDateToJulianDate(epochDay, epochMonth, epochYear), 6)
+func CalculateEgWgAnde(GDay, GMonth, GYear float64, yearLabel datetime.YearLabel, UTHrs, UTMins int, UTSec float64, epochDay, epochMonth, epochYear float64) (Eg, Wg, e, r0, theta0 float64) {
+	julianDate := datetime.ConvertGreenwichDateToJulianDate(GDay, GMonth, GYear, yearLabel)
+	julianDateEpoch := RoundToNDecimals(datetime.ConvertGreenwichDateToJulianDate(epochDay, epochMonth, epochYear, yearLabel), 6)
 
 	T := RoundToNDecimals(((julianDate - 2415020.0) / 36525), 6)
 	Tepoch := RoundToNDecimals((julianDateEpoch-2415020.0)/36525, 6)
@@ -64,7 +64,7 @@ func CalculateL_E_V(Eg, Wg, e float64) (eccentricAnomaly, V, lambda0 float64) {
 	return eccentricAnomaly, V, lambda0
 }
 
-func DaysElapsedSinceEpoch(epochYear, targetYear int) float64 {
+func DaysElapsedSinceEpoch(epochYear, targetYear float64) float64 {
 	days := 0.0
 	isNegative := false
 	if epochYear > targetYear {
@@ -73,7 +73,7 @@ func DaysElapsedSinceEpoch(epochYear, targetYear int) float64 {
 	}
 
 	for year := epochYear; year < targetYear; year++ {
-		if IsLeapYear(year) {
+		if IsLeapYear(int(year)) {
 			days += 366
 		} else {
 			days += 365
@@ -85,13 +85,13 @@ func DaysElapsedSinceEpoch(epochYear, targetYear int) float64 {
 	return days
 }
 
-func CalculatePositionOfSunHelper(GDay float64, GMonth, GYear, UTHrs, UTMins int, UTSec float64, epochDay float64, epochMonth, epochYear int) float64 {
+func CalculatePositionOfSunHelper(GDay, GMonth, GYear float64, yearLabel datetime.YearLabel, UTHrs, UTMins, UTSec float64, epochDay, epochMonth, epochYear float64) float64 {
 	daysElapsedSinceStartOfYear := datetime.CalculateDayNumber(GDay, GMonth, GYear)
 	daysElapsedSinceEpoch := DaysElapsedSinceEpoch(epochYear, GYear)
 
 	// Calculating epoch at 0h of Jan 2010
 	// _, _, adjustedYear := AdjustDate(epochDay, epochMonth, epochYear)
-	Eg, Wg, e, _, _ := CalculateEgWgAnde(GDay, GMonth, GYear, 0, 0, 0, epochDay, epochMonth, epochYear)
+	Eg, Wg, e, _, _ := CalculateEgWgAnde(GDay, GMonth, GYear, yearLabel, 0, 0, 0, epochDay, epochMonth, epochYear)
 
 	N := RoundToNDecimals((360/365.242191)*(daysElapsedSinceStartOfYear+daysElapsedSinceEpoch), 6)
 	M := RoundToNDecimals((N + Eg - Wg), 6)
@@ -137,7 +137,7 @@ func AdjustDate(day float64, month, year int) (float64, int, int) {
 	return day, month, year
 }
 
-func ConvertDecimalDegToDegMinSec(decimalDeg float64) (deg, min int, sec float64) {
+func ConvertDecimalDegToDegMinSec(decimalDeg float64) (deg, min, sec float64) {
 	// Handle negative values by storing the absolute value and adjusting the sign later
 	decimalDegAbs := math.Abs(decimalDeg)
 	Deg, fractPart := math.Modf(decimalDegAbs)
@@ -145,8 +145,8 @@ func ConvertDecimalDegToDegMinSec(decimalDeg float64) (deg, min int, sec float64
 	sec = minFracts * 60
 
 	// Convert fractional part to int
-	deg = int(math.Round(Deg))
-	min = int(math.Round(Mins))
+	deg = math.Round(Deg)
+	min = math.Round(Mins)
 
 	// Apply sign to degrees
 	if decimalDeg < 0 {
@@ -156,8 +156,8 @@ func ConvertDecimalDegToDegMinSec(decimalDeg float64) (deg, min int, sec float64
 	return
 }
 
-func CalculateEclipticMeanObliquity(Gday float64, GMonth, GYear int) (obliquityDeg, obliquityMin int, obliquitySec, meanObliquity float64) {
-	julianDate := datetime.ConvertGreenwichDateToJulianDate(Gday, GMonth, GYear)
+func CalculateEclipticMeanObliquity(Gday, GMonth, GYear float64, yearLabel datetime.YearLabel) (obliquityDeg, obliquityMin, obliquitySec, meanObliquity float64) {
+	julianDate := datetime.ConvertGreenwichDateToJulianDate(Gday, GMonth, GYear, yearLabel)
 	timeElapsed := RoundToNDecimals(((julianDate - 2451545.0) / 36525.0), 6)
 	meanObliquity = RoundToNDecimals(23.439292-(((46.815*timeElapsed)-(0.0006*math.Pow(timeElapsed, 2))+(0.00181*math.Pow(timeElapsed, 3)))/3600), 6)
 	obliquityDeg, obliquityMin, obliquitySec = ConvertDecimalDegToDegMinSec(meanObliquity)
@@ -165,7 +165,7 @@ func CalculateEclipticMeanObliquity(Gday float64, GMonth, GYear int) (obliquityD
 	return obliquityDeg, obliquityMin, obliquitySec, meanObliquity
 }
 
-func ConvertDegMinSecToDecimalDeg(deg, min int, sec float64) float64 {
+func ConvertDegMinSecToDecimalDeg(deg, min, sec float64) float64 {
 	decimalDeg := RoundToNDecimals(math.Abs(float64(deg))+float64(min)/60+(sec/3600), 6)
 	if deg < 0 {
 		return -decimalDeg
@@ -186,63 +186,63 @@ func ConvertDecimalDegressToDecimalHrs(decimalDeg float64) float64 {
 	return decimalDeg / degreesPerHour
 }
 
-// func ConvertEclipticCoordinatesToEquatorial(day float64, month, year int, eclipticLongDeg, eclipticLongMin, eclipticLongSec, eclipticLatDeg, eclipticLatMin, eclipticLatSec float64) (raHrs, raMins int, raSecs float64, decDeg float64, decMin float64, decSec float64) {
-// 	_, _, _, meanObliquity := CalculateEclipticMeanObliquity(day, month, year)
-// 	eclipticLongDecimalDeg := ConvertDegMinSecToDecimalDeg(eclipticLongDeg, eclipticLongMin, eclipticLongSec)
-
-// 	eclipticLatDecimalDeg := ConvertDegMinSecToDecimalDeg(eclipticLatDeg, eclipticLatMin, eclipticLatSec)
-
-// 	decDecimalDeg := ConvertRadianceToDegree(math.Asin((math.Sin(ConvertDegreesToRadiance(eclipticLatDecimalDeg)) * math.Cos(ConvertDegreesToRadiance(meanObliquity))) + (math.Cos(ConvertDegreesToRadiance(eclipticLatDecimalDeg)) * math.Sin(ConvertDegreesToRadiance(meanObliquity)) * math.Sin(ConvertDegreesToRadiance(eclipticLongDecimalDeg)))))
-
-// 	y := (math.Sin(ConvertDegreesToRadiance(eclipticLongDecimalDeg)) * math.Cos(ConvertDegreesToRadiance(meanObliquity))) - (math.Tan(ConvertDegreesToRadiance(eclipticLatDecimalDeg)) * math.Sin(ConvertDegreesToRadiance(meanObliquity)))
-
-// 	x := math.Cos(ConvertDegreesToRadiance(eclipticLongDecimalDeg))
-
-// 	raDeg := ConvertRadianceToDegree(math.Atan2(ConvertDegreesToRadiance(y), ConvertDegreesToRadiance(x)))
-
-// 	raDecimalHrs := ConvertDecimalDegressToDecimalHrs(raDeg)
-
-// 	decDeg, decMin, decSec = ConvertDecimalDegToDegMinSec(decDecimalDeg)
-// 	raHrs, raMins, raSecs = datetime.ConvertDecimalHrsToHrsMinSec(raDecimalHrs)
-
-// 	return raHrs, raMins, raSecs, decDeg, decMin, decSec
-// }
-
-func ConvertEclipticCoordinatesToEquatorial(day float64, month, year, eclipticLongDeg, eclipticLongMin int, eclipticLongSec float64, eclipticLatDeg, eclipticLatMin int, eclipticLatSec float64, epochDay float64, epochMonth, epochYear int) (raHrs int, raMins int, raSecs float64, decDeg int, decMin int, decSec float64) {
-	_, _, _, meanObliquity := CalculateEclipticMeanObliquity(epochDay, epochMonth, epochYear)
+func ConvertEclipticCoordinatesToEquatorial(day, month, year float64, yearLabel datetime.YearLabel, eclipticLongDeg, eclipticLongMin, eclipticLongSec, eclipticLatDeg, eclipticLatMin, eclipticLatSec float64) (raHrs, raMins, raSecs, decDeg, decMin, decSec float64) {
+	_, _, _, meanObliquity := CalculateEclipticMeanObliquity(day, month, year, yearLabel)
 	eclipticLongDecimalDeg := ConvertDegMinSecToDecimalDeg(eclipticLongDeg, eclipticLongMin, eclipticLongSec)
+
 	eclipticLatDecimalDeg := ConvertDegMinSecToDecimalDeg(eclipticLatDeg, eclipticLatMin, eclipticLatSec)
 
-	// Convert meanObliquity to radians
-	meanObliquityRad := ConvertDegreesToRadiance(meanObliquity)
+	decDecimalDeg := ConvertRadianceToDegree(math.Asin((math.Sin(ConvertDegreesToRadiance(eclipticLatDecimalDeg)) * math.Cos(ConvertDegreesToRadiance(meanObliquity))) + (math.Cos(ConvertDegreesToRadiance(eclipticLatDecimalDeg)) * math.Sin(ConvertDegreesToRadiance(meanObliquity)) * math.Sin(ConvertDegreesToRadiance(eclipticLongDecimalDeg)))))
 
-	// Convert ecliptic longitude and latitude to radians
-	eclipticLongRad := ConvertDegreesToRadiance(eclipticLongDecimalDeg)
-	eclipticLatRad := ConvertDegreesToRadiance(eclipticLatDecimalDeg)
+	y := (math.Sin(ConvertDegreesToRadiance(eclipticLongDecimalDeg)) * math.Cos(ConvertDegreesToRadiance(meanObliquity))) - (math.Tan(ConvertDegreesToRadiance(eclipticLatDecimalDeg)) * math.Sin(ConvertDegreesToRadiance(meanObliquity)))
 
-	// Calculate Declination
-	decRad := math.Asin((math.Sin(eclipticLatRad) * math.Cos(meanObliquityRad)) + (math.Cos(eclipticLatRad) * math.Sin(meanObliquityRad) * math.Sin(eclipticLongRad)))
-	decDecimalDeg := ConvertRadianceToDegree(decRad)
+	x := math.Cos(ConvertDegreesToRadiance(eclipticLongDecimalDeg))
+
+	raDeg := ConvertRadianceToDegree(math.Atan2(ConvertDegreesToRadiance(y), ConvertDegreesToRadiance(x)))
+
+	raDecimalHrs := ConvertDecimalDegressToDecimalHrs(raDeg)
+
 	decDeg, decMin, decSec = ConvertDecimalDegToDegMinSec(decDecimalDeg)
-
-	// Calculate Right Ascension
-	y := (math.Sin(eclipticLongRad) * math.Cos(meanObliquityRad)) - (math.Tan(eclipticLatRad) * math.Sin(meanObliquityRad))
-	x := math.Cos(eclipticLongRad)
-	raRad := math.Atan(y / x)
-	raDeg := AdjustAngleInQuadrant(x, y, ConvertRadianceToDegree(raRad))
-	raDecimalHrs := raDeg / 15.0                                       // Convert degrees to hours
-	raHrs, raMins, raSecs = ConvertDecimalDegToDegMinSec(raDecimalHrs) // Convert back to hours, minutes, and seconds
-	// fmt.Printf("\nmeanObliquity : %f\neclipticLongDecimalDeg : %f\neclipticLatDecimalDeg : %f\ndecRad : %f\ndecDecimalDeg : %f\nx : %f\ny : %f\nraDeg : %f\nraDecimalHrs : %f\n", meanObliquity, eclipticLongDecimalDeg, eclipticLatDecimalDeg, decRad, decDecimalDeg, x, y, raDeg, raDecimalHrs)
+	raHrs, raMins, raSecs = datetime.ConvertDecimalHrsToHrsMinSec(raDecimalHrs)
 
 	return raHrs, raMins, raSecs, decDeg, decMin, decSec
 }
 
-func CalculatePositionOfSun(GDay float64, GMonth, GYear, UTHrs, UTMins int, UTSec float64, epochDay float64, epochMonth, epochYear int) (raHrs, raMin int, raSec float64, decDeg, decMin int, decSec, lambda float64) {
-	lambda = CalculatePositionOfSunHelper(GDay, GMonth, GYear, UTHrs, UTMins, UTSec, epochDay, epochMonth, epochYear)
-	lambdaDeg, lambdaMin, lambdaSec := ConvertDecimalDegToDegMinSec(lambda)
-	raHrs, raMin, raSec, decDeg, decMin, decSec = ConvertEclipticCoordinatesToEquatorial(GDay, int(GMonth), int(GYear), lambdaDeg, lambdaMin, lambdaSec, 0, 0, 0, epochDay, epochMonth, epochYear)
-	return raHrs, raMin, raSec, decDeg, decMin, decSec, lambda
-}
+// func ConvertEclipticCoordinatesToEquatorial(day float64, month, year, eclipticLongDeg, eclipticLongMin int, eclipticLongSec float64, eclipticLatDeg, eclipticLatMin int, eclipticLatSec float64, epochDay float64, epochMonth, epochYear int) (raHrs int, raMins int, raSecs float64, decDeg int, decMin int, decSec float64) {
+// 	_, _, _, meanObliquity := CalculateEclipticMeanObliquity(epochDay, epochMonth, epochYear)
+// 	eclipticLongDecimalDeg := ConvertDegMinSecToDecimalDeg(eclipticLongDeg, eclipticLongMin, eclipticLongSec)
+// 	eclipticLatDecimalDeg := ConvertDegMinSecToDecimalDeg(eclipticLatDeg, eclipticLatMin, eclipticLatSec)
+
+// 	// Convert meanObliquity to radians
+// 	meanObliquityRad := ConvertDegreesToRadiance(meanObliquity)
+
+// 	// Convert ecliptic longitude and latitude to radians
+// 	eclipticLongRad := ConvertDegreesToRadiance(eclipticLongDecimalDeg)
+// 	eclipticLatRad := ConvertDegreesToRadiance(eclipticLatDecimalDeg)
+
+// 	// Calculate Declination
+// 	decRad := math.Asin((math.Sin(eclipticLatRad) * math.Cos(meanObliquityRad)) + (math.Cos(eclipticLatRad) * math.Sin(meanObliquityRad) * math.Sin(eclipticLongRad)))
+// 	decDecimalDeg := ConvertRadianceToDegree(decRad)
+// 	decDeg, decMin, decSec = ConvertDecimalDegToDegMinSec(decDecimalDeg)
+
+// 	// Calculate Right Ascension
+// 	y := (math.Sin(eclipticLongRad) * math.Cos(meanObliquityRad)) - (math.Tan(eclipticLatRad) * math.Sin(meanObliquityRad))
+// 	x := math.Cos(eclipticLongRad)
+// 	raRad := math.Atan(y / x)
+// 	raDeg := AdjustAngleInQuadrant(x, y, ConvertRadianceToDegree(raRad))
+// 	raDecimalHrs := raDeg / 15.0                                       // Convert degrees to hours
+// 	raHrs, raMins, raSecs = ConvertDecimalDegToDegMinSec(raDecimalHrs) // Convert back to hours, minutes, and seconds
+// 	// fmt.Printf("\nmeanObliquity : %f\neclipticLongDecimalDeg : %f\neclipticLatDecimalDeg : %f\ndecRad : %f\ndecDecimalDeg : %f\nx : %f\ny : %f\nraDeg : %f\nraDecimalHrs : %f\n", meanObliquity, eclipticLongDecimalDeg, eclipticLatDecimalDeg, decRad, decDecimalDeg, x, y, raDeg, raDecimalHrs)
+
+// 	return raHrs, raMins, raSecs, decDeg, decMin, decSec
+// }
+
+// func CalculatePositionOfSun(GDay float64, GMonth, GYear, UTHrs, UTMins int, UTSec float64, epochDay float64, epochMonth, epochYear int) (raHrs, raMin int, raSec float64, decDeg, decMin int, decSec, lambda float64) {
+// 	lambda = CalculatePositionOfSunHelper(GDay, GMonth, GYear, UTHrs, UTMins, UTSec, epochDay, epochMonth, epochYear)
+// 	lambdaDeg, lambdaMin, lambdaSec := ConvertDecimalDegToDegMinSec(lambda)
+// 	raHrs, raMin, raSec, decDeg, decMin, decSec = ConvertEclipticCoordinatesToEquatorial(GDay, int(GMonth), int(GYear), lambdaDeg, lambdaMin, lambdaSec, 0, 0, 0, epochDay, epochMonth, epochYear)
+// 	return raHrs, raMin, raSec, decDeg, decMin, decSec, lambda
+// }
 
 func AdjustAngleInQuadrant(x, y, A float64) float64 {
 	// Check the signs of x and y to determine the quadrant
