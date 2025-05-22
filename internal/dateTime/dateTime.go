@@ -6,16 +6,16 @@ import (
 
 var daysOfWeek = [...]string{"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"}
 
-type YearLabel int
+type Era int
 
 const (
-	AD  YearLabel = iota // 0
-	BC  YearLabel = 1    // 1
-	CE  YearLabel = 2    // 0
-	BCE YearLabel = 3    // 1
+	AD  Era = iota // 0
+	BC  Era = 1    // 1
+	CE  Era = 2    // 0
+	BCE Era = 3    // 1
 )
 
-func (c YearLabel) String(year float64) float64 {
+func (c Era) String(year float64) float64 {
 	switch c {
 	case AD:
 		return year
@@ -70,8 +70,8 @@ func CalculateDateOfEaster(year float64) (day, month float64) {
 
 	// Determine the month and day of Easter
 	monthOffset := (goldenNumber + 11*epact + 22*dominicalNumber) / 451
-	month = float64(epact+dominicalNumber-7*monthOffset+114) / 31
-	day = float64(int(epact+dominicalNumber-7*monthOffset+114)%31 + 1)
+	month, _ = math.Modf(float64(epact+dominicalNumber-7*monthOffset+114) / 31)
+	day, _ = math.Modf(float64(int(epact+dominicalNumber-7*monthOffset+114)%31 + 1))
 
 	return day, month
 }
@@ -104,9 +104,9 @@ func CalculateDayNumber(day, month, year float64) float64 {
 	return dayNumber
 }
 
-func ConvertGreenwichDateToJulianDate(day, month, year float64, yearLabel YearLabel) float64 {
+func ConvertGreenwichDateToJulianDate(day, month, year float64, era Era) float64 {
 	var a, c, y, m float64
-	year = yearLabel.String(year)
+	year = era.String(year)
 	if month <= 2 {
 		y = year - 1
 		m = month + 12
@@ -171,9 +171,9 @@ func ConvertJulianDateToGreenwichDate(julianDate float64) (day, month, year floa
 	return day, month, year
 }
 
-func GetNameOfTheDayOfMonth(day, month, year float64, yearLabel YearLabel) string {
+func GetNameOfTheDayOfMonth(day, month, year float64, era Era) string {
 	// Convert the Greenwich date to a Julian Date Number
-	julianDate := ConvertGreenwichDateToJulianDate(day, month, year, yearLabel)
+	julianDate := ConvertGreenwichDateToJulianDate(day, month, year, era)
 
 	// Calculate the day of the week (0 = Monday, 6 = Sunday)
 	dayOfWeek := int(math.Mod(julianDate+1.5, 7))
@@ -233,7 +233,7 @@ func ConvertDecimalHrsToHrsMinSec(decimalHours float64) (hours, minutes, seconds
 	return hours, minutesFloat, seconds
 }
 
-func ConvertLocalTimeToUniversalTime(day, month, year float64, yearLabel YearLabel, hrs, min, sec float64, daylightsavingHrs, daylightsavingMin, zoneOffset float64) (UTDay, UTMonth, UTYear float64, UTHrs, UTMin, UTSec, decimalTime float64) {
+func ConvertLocalTimeToUniversalTime(day, month, year float64, era Era, hrs, min, sec float64, daylightsavingHrs, daylightsavingMin, zoneOffset float64) (UTDay, UTMonth, UTYear float64, UTHrs, UTMin, UTSec, decimalTime float64) {
 	// Adjust for daylight saving time
 	hrs -= daylightsavingHrs
 	min -= daylightsavingMin
@@ -248,7 +248,7 @@ func ConvertLocalTimeToUniversalTime(day, month, year float64, yearLabel YearLab
 	Gday := (UT / 24) + day
 
 	// Calculate Julian Date from Greenwich calendar day
-	julianDate := ConvertGreenwichDateToJulianDate(Gday, month, year, yearLabel)
+	julianDate := ConvertGreenwichDateToJulianDate(Gday, month, year, era)
 
 	// Convert Julian Date back to Greenwich calendar date
 	UTDay, UTMonth, UTYear = ConvertJulianDateToGreenwichDate(julianDate)
@@ -272,12 +272,12 @@ func ConvertLocalTimeToUniversalTime(day, month, year float64, yearLabel YearLab
 	return UTDay, UTMonth, UTYear, UTHrs, UTMin, UTSec, decimalTime
 }
 
-func ConvertUniversalTimeToLocalTime(day, month, year float64, yearLabel YearLabel, hrs, min, sec float64, daylightsavingHrs, daylightsavingMin, zoneOffset float64) (Gday, calMonth, calYear float64, GHrs, GMin, GSec float64) {
+func ConvertUniversalTimeToLocalTime(day, month, year float64, era Era, hrs, min, sec float64, daylightsavingHrs, daylightsavingMin, zoneOffset float64) (Gday, calMonth, calYear float64, GHrs, GMin, GSec float64) {
 	factor := math.Pow(10, float64(6))
 	decimalHrs := ConvertHrsMinSecToDecimalHrs(hrs, min, sec, false, false) + zoneOffset + (daylightsavingHrs) + (daylightsavingMin)
 	decimalHrs = math.Round(decimalHrs*factor) / factor
 
-	julianDate := ConvertGreenwichDateToJulianDate(day, month, year, yearLabel) + (decimalHrs / 24)
+	julianDate := ConvertGreenwichDateToJulianDate(day, month, year, era) + (decimalHrs / 24)
 	julianDate = math.Round(julianDate*factor) / factor
 
 	calDay, calMonth, calYear := ConvertJulianDateToGreenwichDate(julianDate)
@@ -292,8 +292,8 @@ func ConvertUniversalTimeToLocalTime(day, month, year float64, yearLabel YearLab
 	return Gday, calMonth, calYear, GHrs, GMin, GSec
 }
 
-func ConvertUniversalTimeToGreenwichSiderealTime(day, month, year float64, yearLabel YearLabel, hrs, min, sec float64) (GSTHrs, GSTMin, GSTSec, gst float64) {
-	julianDate := ConvertGreenwichDateToJulianDate(day, month, year, yearLabel)
+func ConvertUniversalTimeToGreenwichSiderealTime(day, month, year float64, era Era, hrs, min, sec float64) (GSTHrs, GSTMin, GSTSec, gst float64) {
+	julianDate := ConvertGreenwichDateToJulianDate(day, month, year, era)
 	elapsedDays := julianDate - 2451545.0
 	centuriesSinceJ2000 := elapsedDays / 36525.0
 	gstAtZeroUT := 6.697374558 + (2400.051336 * centuriesSinceJ2000) + (0.000025862 * math.Pow(centuriesSinceJ2000, 2))
@@ -322,8 +322,8 @@ func ConvertUniversalTimeToGreenwichSiderealTime(day, month, year float64, yearL
 	return GSTHrs, GSTMin, GSTSec, gst
 }
 
-func ConvertGreenwichSiderealTimeToUniversalTime(day, month, year float64, yearLabel YearLabel, hrs, min, sec float64) (UTHrs, UTMin, UTSec float64) {
-	julianDate := ConvertGreenwichDateToJulianDate(day, month, year, yearLabel)
+func ConvertGreenwichSiderealTimeToUniversalTime(day, month, year float64, era Era, hrs, min, sec float64) (UTHrs, UTMin, UTSec float64) {
+	julianDate := ConvertGreenwichDateToJulianDate(day, month, year, era)
 	centuriesSinceJ2000 := ((julianDate - 2451545.0) / 36525.0)
 	factor := math.Pow(10, float64(6))
 	centuriesSinceJ2000 = math.Round(centuriesSinceJ2000*factor) / factor

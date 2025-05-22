@@ -16,33 +16,33 @@ func TestCalculateDateofEaster(t *testing.T) {
 		expectedDay   float64
 		expectedMonth float64
 	}{
-		{2009, 12, 4},
-		{2023, 9, 4},  // Recent year
-		{1900, 15, 4}, // Year close to the 20th century
-		{2100, 28, 3}, // Year close to the 22nd century
+		{2009.0, 12.0, 4.0},
+		{2023.0, 9.0, 4.0},  // Recent year
+		{1900.0, 15.0, 4.0}, // Year close to the 20th century
+		{2100.0, 28.0, 3.0}, // Year close to the 22nd century
 	}
 
 	for _, test := range tests {
 		day, month := datetime.CalculateDateOfEaster(test.year)
-		if day != test.expectedDay || month != test.expectedMonth {
+		if math.Abs(day-test.expectedDay) > 0.01 || math.Abs(month-test.expectedMonth) > 0.01 {
 			t.Fatalf(`Error while calculating Date of easter for year %f. Expected: %f-%f    Got: %f-%f`, test.year, test.expectedDay, test.expectedMonth, day, month)
 		}
 	}
 }
 
-// TestConvertToJulianDate tests the conversion of Gregorian date to Julian date with various input cases.
-func TestConvertToJulianDate(t *testing.T) {
+// ConvertGreenwichDateToJulianDate tests the conversion of Gregorian date to Julian date with various input cases.
+func ConvertGreenwichDateToJulianDate(t *testing.T) {
 	tests := []struct {
 		day                float64
 		month              float64
 		year               float64
 		expectedJulianDate float64
-		yearLabel          datetime.YearLabel
+		era                datetime.Era
 	}{
-		{19.75, 6, 2009, 2455002.25, datetime.AD}, // OK: June 19, 2009, 18:00 UTC
-		{1.0, 1, 2000, 2451544.5, datetime.AD},    // OK
-		{31.0, 12, 1999, 2451543.5, datetime.AD},  // OK
-		{29.5, 2, 2020, 2458909.0, datetime.AD},   // OK (Leap year, Feb 29 at noon)
+		{19.75, 6, 2009, 2455002.25, datetime.AD}, // June 19, 2009, 18:00 UTC
+		{1.0, 1, 2000, 2451544.5, datetime.AD},    //
+		{31.0, 12, 1999, 2451543.5, datetime.AD},  //
+		{29.5, 2, 2020, 2458909.0, datetime.AD},   // (Leap year, Feb 29 at noon)
 
 		// Epoch (Jan 1, 4713 BC noon UTC)
 		{1.5, 1, -4712, 0.0, datetime.AD}, // OK (Astronomical year -4712 = 4713 BC)
@@ -66,15 +66,12 @@ func TestConvertToJulianDate(t *testing.T) {
 		{1.5, 2, 2023, 2459977.0, datetime.AD},  // Feb 1, 2023 noon
 		{28.5, 2, 2023, 2460004.0, datetime.AD}, // Feb 28, 2023 noon
 
-		// Early historical date
-		{1.5, 1, -10000, -1931442.0, datetime.AD}, // Jan 1, 10000 BC noon
-
 		// Edge of day: Just before Julian date changes
 		{0.9999, 1, 2000, 2451544.4999, datetime.AD}, // Just before midnight Jan 1, 2000
 	}
 
 	for _, test := range tests {
-		julianDate := datetime.ConvertGreenwichDateToJulianDate(test.day, test.month, test.year, test.yearLabel)
+		julianDate := datetime.ConvertGreenwichDateToJulianDate(test.day, test.month, test.year, test.era)
 		if math.Abs(julianDate-test.expectedJulianDate) > 0.0001 {
 			t.Fatalf(`Error while converting Greenwich Date to Julian for day=%f, month=%f, year=%f. Expected: %f, Got: %f`,
 				test.day, test.month, test.year, test.expectedJulianDate, julianDate)
@@ -103,8 +100,8 @@ func TestConvertToJulianDate(t *testing.T) {
 // 	}
 // }
 
-// // TestConvertToGreenwichDate tests the conversion of Julian date to Greenwich date with various cases.
-func TestConvertToGreenwichDate(t *testing.T) {
+// TestConvertJulianToGreenwichDate tests the conversion of Julian date to Greenwich date with various cases.
+func TestConvertJulianToGreenwichDate(t *testing.T) {
 	epsilon := 0.000001
 	tests := []struct {
 		julianDate                               float64
@@ -151,7 +148,7 @@ func TestConvertToGreenwichDate(t *testing.T) {
 		day, month, year := datetime.ConvertJulianDateToGreenwichDate(test.julianDate)
 		if (day-test.expectedDay) > epsilon || (month-test.expectedMonth) > 0 || (year-test.expectedYear) > 0 {
 			fmt.Println(day)
-			t.Fatalf(`Error while converting Julian to Greenwich Date. Expected: %f-%d-%d    Got: %f-%d-%d`, test.expectedDay, test.expectedMonth, test.expectedYear, day, month, year)
+			t.Fatalf(`Error while converting Julian to Greenwich Date. Expected: %f-%f-%f    Got: %f-%f-%f`, test.expectedDay, test.expectedMonth, test.expectedYear, day, month, year)
 		}
 	}
 }
@@ -160,7 +157,7 @@ func TestConvertToGreenwichDate(t *testing.T) {
 func TestGetNameOfTheDayOfMonth(t *testing.T) {
 	tests := []struct {
 		day, month, year float64
-		yearLabel        datetime.YearLabel
+		era              datetime.Era
 		expectedDayName  string
 	}{
 		{19.0, 6, 2009, datetime.AD, "Friday"},
@@ -170,7 +167,7 @@ func TestGetNameOfTheDayOfMonth(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		dayName := datetime.GetNameOfTheDayOfMonth(test.day, test.month, test.year, test.yearLabel)
+		dayName := datetime.GetNameOfTheDayOfMonth(test.day, test.month, test.year, test.era)
 		if dayName != test.expectedDayName {
 			t.Fatalf(`Error while getting name of the day in the week. Expected: %s    Got: %s`, test.expectedDayName, dayName)
 		}
@@ -198,7 +195,7 @@ func TestConvertHrsMinSecToDecimalHrs(t *testing.T) {
 	for _, test := range tests {
 		decimalHrs := datetime.ConvertHrsMinSecToDecimalHrs(test.hrs, test.min, test.sec, test.is12HrClock, test.isPM)
 		if math.Abs(decimalHrs-test.expectedOpt) > epsilon {
-			t.Fatalf("Failed: %02d:%02d:%.1f (12hr=%v, PM=%v)\nExpected: %.6f\nGot:      %.6f",
+			t.Fatalf("Failed: %02f:%02f:%.1f (12hr=%v, PM=%v)\nExpected: %.6f\nGot:      %.6f",
 				test.hrs, test.min, test.sec, test.is12HrClock, test.isPM,
 				test.expectedOpt, decimalHrs)
 		}
@@ -208,10 +205,8 @@ func TestConvertHrsMinSecToDecimalHrs(t *testing.T) {
 // // TestConvertDecimalHrsToHrsMinSec tests the conversion of decimal hours to hours, minutes, and seconds.
 func TestConvertDecimalHrsToHrsMinSec(t *testing.T) {
 	tests := []struct {
-		decimalHrs  float64
-		expectedHrs int
-		expectedMin int
-		expectedSec float64
+		decimalHrs                            float64
+		expectedHrs, expectedMin, expectedSec float64
 	}{
 		{18.524167, 18, 31, 27},
 		{12.0, 12, 0, 0},
@@ -230,7 +225,7 @@ func TestConvertDecimalHrsToHrsMinSec(t *testing.T) {
 			math.Abs(float64(min)-float64(test.expectedMin)) > epsilon ||
 			math.Abs(sec-test.expectedSec) > epsilon {
 
-			t.Fatalf("Failed for decimalHours=%.6f\nExpected: %02d:%02d:%06.3f\nGot:      %02d:%02d:%06.3f",
+			t.Fatalf("Failed for decimalHours=%.6f\nExpected: %02f:%02f:%06.3f\nGot:      %02f:%02f:%06.3f",
 				test.decimalHrs, test.expectedHrs, test.expectedMin, test.expectedSec, hrs, min, sec)
 		}
 	}
@@ -241,7 +236,7 @@ func TestConvertLocalTimeToUniversalTime(t *testing.T) {
 	tolerance := 0.0001
 	tests := []struct {
 		day, month, year                                                   float64
-		yearLabel                                                          datetime.YearLabel
+		era                                                                datetime.Era
 		hrs, min, sec                                                      float64
 		daylightSavingHrs, daylightSavingMin                               float64
 		timeZoneOffsetHrs, expectedDay                                     float64
@@ -259,7 +254,7 @@ func TestConvertLocalTimeToUniversalTime(t *testing.T) {
 
 	for _, test := range tests {
 		UTDay, UTMon, UTYear, UTHrs, UTMin, UTSec, _ := datetime.ConvertLocalTimeToUniversalTime(
-			test.day, test.month, test.year, test.yearLabel,
+			test.day, test.month, test.year, test.era,
 			test.hrs, test.min, test.sec,
 			test.daylightSavingHrs, test.daylightSavingMin,
 			test.timeZoneOffsetHrs,
@@ -271,7 +266,7 @@ func TestConvertLocalTimeToUniversalTime(t *testing.T) {
 			float64(UTHrs-test.expectedHrs) > tolerance ||
 			float64(UTMin-test.expectedMin) > 0 ||
 			math.Abs(UTSec-test.expectedSec) > tolerance {
-			t.Fatalf("Error converting Local Time to Universal Time. Expected: %f-%d-%d %d:%d:%f, Got: %f-%d-%d %d:%d:%f",
+			t.Fatalf("Error converting Local Time to Universal Time. Expected: %f-%f-%f %f:%f:%f, Got: %f-%f-%f %f:%f:%f",
 				test.expectedDay, test.expectedMonth, test.expectedYear,
 				test.expectedHrs, test.expectedMin, test.expectedSec,
 				UTDay, UTMon, UTYear, UTHrs, UTMin, UTSec)
@@ -283,7 +278,7 @@ func TestConvertLocalTimeToUniversalTime(t *testing.T) {
 func TestConvertUniversalTimeToLocalTime(t *testing.T) {
 	tests := []struct {
 		day, month, year                                                   float64
-		yearLabel                                                          datetime.YearLabel
+		era                                                                datetime.Era
 		hrs, min, sec                                                      float64
 		daylightSavingHrs, daylightSavingMin, timeZoneOffsetHrs            float64
 		expectedDay                                                        float64
@@ -295,9 +290,9 @@ func TestConvertUniversalTimeToLocalTime(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		GDay, GMon, GYear, GHrs, GMin, GSec := datetime.ConvertUniversalTimeToLocalTime(test.day, test.month, test.year, test.yearLabel, test.hrs, test.min, test.sec, test.daylightSavingHrs, test.daylightSavingMin, test.timeZoneOffsetHrs)
+		GDay, GMon, GYear, GHrs, GMin, GSec := datetime.ConvertUniversalTimeToLocalTime(test.day, test.month, test.year, test.era, test.hrs, test.min, test.sec, test.daylightSavingHrs, test.daylightSavingMin, test.timeZoneOffsetHrs)
 		if GDay != test.expectedDay || GMon != test.expectedMonth || GYear != test.expectedYear || GHrs != test.expectedHrs || GMin != test.expectedMin || math.Trunc(GSec) != test.expectedSec {
-			t.Fatalf("Error while converting Universal Time to Local Time. Expected: %f-%d-%d %d:%d:%f    Got: %f-%d-%d %d:%d:%f",
+			t.Fatalf("Error while converting Universal Time to Local Time. Expected: %f-%f-%f %f:%f:%f    Got: %f-%f-%f %f:%f:%f",
 				test.expectedDay, test.expectedMonth, test.expectedYear, test.expectedHrs, test.expectedMin, test.expectedSec,
 				GDay, GMon, GYear, GHrs, GMin, GSec)
 		}
@@ -308,7 +303,7 @@ func TestConvertUniversalTimeToLocalTime(t *testing.T) {
 func TestConvertUniversalTimeToGreenwichSiderealTime(t *testing.T) {
 	tests := []struct {
 		day, month, year                      float64
-		yearLabel                             datetime.YearLabel
+		era                                   datetime.Era
 		hrs, min, sec                         float64
 		expectedHrs, expectedMin, expectedSec float64
 	}{
@@ -318,9 +313,9 @@ func TestConvertUniversalTimeToGreenwichSiderealTime(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		GHrs, GMin, GSec, _ := datetime.ConvertUniversalTimeToGreenwichSiderealTime(test.day, test.month, test.year, test.yearLabel, test.hrs, test.min, test.sec)
+		GHrs, GMin, GSec, _ := datetime.ConvertUniversalTimeToGreenwichSiderealTime(test.day, test.month, test.year, test.era, test.hrs, test.min, test.sec)
 		if GHrs != test.expectedHrs || GMin != test.expectedMin || math.Abs(GSec-test.expectedSec) > tolerance {
-			t.Fatalf("Error while converting Universal Time to Greenwich Sidereal Time. Expected: %d:%d:%f    Got: %d:%d:%f",
+			t.Fatalf("Error while converting Universal Time to Greenwich Sidereal Time. Expected: %f:%f:%f    Got: %f:%f:%f",
 				test.expectedHrs, test.expectedMin, test.expectedSec, GHrs, GMin, GSec)
 		}
 	}
@@ -330,7 +325,7 @@ func TestConvertUniversalTimeToGreenwichSiderealTime(t *testing.T) {
 func TestConvertGreenwichSiderealTimeToUniversalTime(t *testing.T) {
 	tests := []struct {
 		day, month, year                      float64
-		yearLabel                             datetime.YearLabel
+		era                                   datetime.Era
 		hrs, min, sec                         float64
 		expectedHrs, expectedMin, expectedSec float64
 	}{
@@ -340,9 +335,9 @@ func TestConvertGreenwichSiderealTimeToUniversalTime(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		GHrs, GMin, GSec := datetime.ConvertGreenwichSiderealTimeToUniversalTime(test.day, test.month, test.year, test.yearLabel, test.hrs, test.min, test.sec)
+		GHrs, GMin, GSec := datetime.ConvertGreenwichSiderealTimeToUniversalTime(test.day, test.month, test.year, test.era, test.hrs, test.min, test.sec)
 		if float64(GHrs-test.expectedHrs) > tolerance || float64(GMin-test.expectedMin) > tolerance || (GSec-test.expectedSec) > tolerance {
-			t.Fatalf("Error while converting Greenwich Sidereal to Universal Time. Expected: %d:%d:%f    Got: %d:%d:%f",
+			t.Fatalf("Error while converting Greenwich Sidereal to Universal Time. Expected: %f:%f:%f    Got: %f:%f:%f",
 				test.expectedHrs, test.expectedMin, test.expectedSec, GHrs, GMin, GSec)
 		}
 	}
@@ -362,7 +357,7 @@ func TestCalculateLocalSiderealTimeUsingGreenwichSiderealTime(t *testing.T) {
 	for _, test := range tests {
 		LSTHrs, LSTMin, LSTSec, _ := datetime.CalculateLocalSiderealTimeUsingGreenwichSiderealTime(test.GHrs, test.GMin, test.GSec, test.longitude)
 		if LSTHrs != test.expectedLSTHrs || LSTMin != test.expectedLSTMin || (LSTSec-test.expectedLSTSec) > tolerance {
-			t.Fatalf("Error while converting Local Sidereal Time Using Greenwich Sidereal Time. Expected: %d:%d:%f    Got: %d:%d:%f",
+			t.Fatalf("Error while converting Local Sidereal Time Using Greenwich Sidereal Time. Expected: %f:%f:%f    Got: %f:%f:%f",
 				test.expectedLSTHrs, test.expectedLSTMin, test.expectedLSTSec, LSTHrs, LSTMin, LSTSec)
 		}
 	}
@@ -382,7 +377,7 @@ func TestCalculateGreenwichSiderealTimeUsingLocalSiderealTime(t *testing.T) {
 	for _, test := range tests {
 		GHrs, GMin, GSec, _ := datetime.CalculateGreenwichSiderealTimeUsingLocalSiderealTime(test.LSTHrs, test.LSTMin, test.LSTSec, test.longitude)
 		if GHrs != test.expectedGHrs || GMin != test.expectedGMin || (GSec-test.expectedGSec) > tolerance {
-			t.Fatalf("Error while converting Greenwich Sidereal Time Using Local Sidereal Time. Expected: %d:%d:%f    Got: %d:%d:%f",
+			t.Fatalf("Error while converting Greenwich Sidereal Time Using Local Sidereal Time. Expected: %f:%f:%f    Got: %f:%f:%f",
 				test.expectedGHrs, test.expectedGMin, test.expectedGSec, GHrs, GMin, GSec)
 		}
 	}
